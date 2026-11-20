@@ -34,7 +34,8 @@ export const TopNav: React.FC = () => {
     notifications,
     markNotificationAsRead,
     resetDemoData,
-    returnToGateway
+    returnToGateway,
+    isBackendConnected
   } = useApp();
 
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -94,6 +95,19 @@ export const TopNav: React.FC = () => {
 
       {/* RIGHT: DATE RANGE PICKER (DUAL MONTH), THEME, ALERTS, USER PROFILE */}
       <div className="flex items-center gap-2.5 sm:gap-3">
+        {/* Live Backend Indicator */}
+        {isBackendConnected ? (
+          <span className="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" title="Connected to PostgreSQL & Fastify (Port 4000)">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            LIVE DB
+          </span>
+        ) : (
+          <span className="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20" title="Backend active on port 4000. Ready for PostgreSQL connection.">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-400"></span>
+            SANDBOX
+          </span>
+        )}
+
         {/* Enterprise Date Range Popover (Dual Month Calendar + Presets) */}
         <EnterpriseDateRangePicker />
 

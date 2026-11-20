@@ -18,6 +18,7 @@ import {
   CustomDateRange
 } from '../data/types';
 import { generateFullEnterpriseMockData, DEMO_USERS } from '../data/mockDataGenerator';
+import { apiClient } from '../lib/api';
 
 export type NavigationModule = 
   | 'overview'
@@ -111,6 +112,10 @@ interface AppContextType {
   // Notifications
   notifications: Array<{ id: string; text: string; time: string; read: boolean; type: 'success' | 'warning' | 'info' }>;
   markNotificationAsRead: (id: string) => void;
+
+  // Live Backend Connection
+  isBackendConnected: boolean;
+  refreshBackendStatus: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -359,6 +364,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setNotifications(prev => prev.map(n => (n.id === id ? { ...n, read: true } : n)));
   };
 
+  // Live Backend Health State & Periodic Polling
+  const [isBackendConnected, setIsBackendConnected] = useState<boolean>(false);
+
+  const refreshBackendStatus = async () => {
+    try {
+      const health = await apiClient.checkHealth();
+      setIsBackendConnected(health.database?.ok === true);
+    } catch {
+      setIsBackendConnected(false);
+    }
+  };
+
+  useEffect(() => {
+    refreshBackendStatus();
+    const interval = setInterval(refreshBackendStatus, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <AppContext.Provider
       value={{
@@ -413,7 +436,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         db,
         resetDemoData,
         notifications,
-        markNotificationAsRead
+        markNotificationAsRead,
+        isBackendConnected,
+        refreshBackendStatus
       }}
     >
       {children}
