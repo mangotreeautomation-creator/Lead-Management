@@ -1,0 +1,605 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Poppins:wght@400;500;600;700&family=Sora:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --background: #0c0e14;
+  --foreground: #ffffff;
+  --surface: #141620;
+  --surface-subtle: #181b28;
+  --border: #27272a;
+  --border-subtle: #222226;
+  --theme-accent: #3b82f6;
+}
+
+/* ==============================================================================
+   10 PRODUCTION-LEVEL TYPOGRAPHY FONTS
+   ============================================================================== */
+[data-font="inter"] {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}
+[data-font="plus-jakarta"] {
+  --font-sans: 'Plus Jakarta Sans', -apple-system, sans-serif !important;
+}
+[data-font="outfit"] {
+  --font-sans: 'Outfit', sans-serif !important;
+}
+[data-font="dm-sans"] {
+  --font-sans: 'DM Sans', sans-serif !important;
+}
+[data-font="poppins"] {
+  --font-sans: 'Poppins', sans-serif !important;
+}
+[data-font="sora"] {
+  --font-sans: 'Sora', sans-serif !important;
+}
+[data-font="space-grotesk"] {
+  --font-sans: 'Space Grotesk', sans-serif !important;
+}
+[data-font="cinzel"] {
+  --font-sans: 'Cinzel', serif !important;
+}
+[data-font="manrope"] {
+  --font-sans: 'Manrope', sans-serif !important;
+}
+[data-font="jetbrains-mono"] {
+  --font-sans: 'JetBrains Mono', monospace !important;
+}
+
+body,
+h1, h2, h3, h4, h5, h6,
+p, span, div, a, button, input, select, textarea, label, td, th {
+  font-family: var(--font-sans);
+}
+
+.font-mono, kbd, code, pre {
+  font-family: var(--font-mono) !important;
+}
+
+/* ==============================================================================
+   10 PRODUCTION-LEVEL COLOR THEMES (REAL-TIME CSS OVERRIDES)
+   ============================================================================== */
+
+/* 1. OBSIDIAN MIDNIGHT (DEFAULT) */
+[data-theme="obsidian"] {
+  --background: #0c0e14 !important;
+  --surface: #141620 !important;
+  --border: #27272a !important;
+  --theme-accent: #3b82f6 !important;
+}
+
+/* 2. VASTU FORTUNE EMERALD */
+[data-theme="emerald"] {
+  --background: #05110a !important;
+  --surface: #0c2014 !important;
+  --border: #1a422a !important;
+  --theme-accent: #10b981 !important;
+}
+[data-theme="emerald"] body,
+[data-theme="emerald"] .bg-\[\#0c0e14\],
+[data-theme="emerald"] .bg-\[\#0d0f17\],
+[data-theme="emerald"] .bg-\[\#0f0f11\],
+[data-theme="emerald"] .dark\:bg-\[\#0f0f11\] {
+  background-color: #05110a !important;
+}
+[data-theme="emerald"] .bg-\[\#10121a\],
+[data-theme="emerald"] .bg-\[\#0f1117\],
+[data-theme="emerald"] .bg-\[\#12141c\],
+[data-theme="emerald"] .bg-\[\#141620\],
+[data-theme="emerald"] .bg-\[\#161824\],
+[data-theme="emerald"] .bg-\[\#18181b\],
+[data-theme="emerald"] .dark\:bg-\[\#18181b\] {
+  background-color: #0c2014 !important;
+}
+[data-theme="emerald"] .border-zinc-800,
+[data-theme="emerald"] .border-\[\#27272a\],
+[data-theme="emerald"] .dark\:border-\[\#27272a\] {
+  border-color: #1a422a !important;
+}
+[data-theme="emerald"] .bg-blue-600 {
+  background-color: #059669 !important;
+}
+[data-theme="emerald"] .text-blue-400 {
+  color: #34d399 !important;
+}
+
+/* 3. VEDIC COSMIC INDIGO */
+[data-theme="cosmic"] {
+  --background: #070b18 !important;
+  --surface: #0f1730 !important;
+  --border: #1c2850 !important;
+  --theme-accent: #6366f1 !important;
+}
+[data-theme="cosmic"] body,
+[data-theme="cosmic"] .bg-\[\#0c0e14\],
+[data-theme="cosmic"] .bg-\[\#0d0f17\],
+[data-theme="cosmic"] .bg-\[\#0f0f11\],
+[data-theme="cosmic"] .dark\:bg-\[\#0f0f11\] {
+  background-color: #070b18 !important;
+}
+[data-theme="cosmic"] .bg-\[\#10121a\],
+[data-theme="cosmic"] .bg-\[\#0f1117\],
+[data-theme="cosmic"] .bg-\[\#12141c\],
+[data-theme="cosmic"] .bg-\[\#141620\],
+[data-theme="cosmic"] .bg-\[\#161824\],
+[data-theme="cosmic"] .bg-\[\#18181b\],
+[data-theme="cosmic"] .dark\:bg-\[\#18181b\] {
+  background-color: #0f1730 !important;
+}
+[data-theme="cosmic"] .border-zinc-800,
+[data-theme="cosmic"] .border-\[\#27272a\],
+[data-theme="cosmic"] .dark\:border-\[\#27272a\] {
+  border-color: #1c2850 !important;
+}
+[data-theme="cosmic"] .bg-blue-600 {
+  background-color: #4f46e5 !important;
+}
+[data-theme="cosmic"] .text-blue-400 {
+  color: #818cf8 !important;
+}
+
+/* 4. SURYA SOLAR GOLD */
+[data-theme="amber"] {
+  --background: #100d07 !important;
+  --surface: #1d180d !important;
+  --border: #322716 !important;
+  --theme-accent: #f59e0b !important;
+}
+[data-theme="amber"] body,
+[data-theme="amber"] .bg-\[\#0c0e14\],
+[data-theme="amber"] .bg-\[\#0d0f17\],
+[data-theme="amber"] .bg-\[\#0f0f11\],
+[data-theme="amber"] .dark\:bg-\[\#0f0f11\] {
+  background-color: #100d07 !important;
+}
+[data-theme="amber"] .bg-\[\#10121a\],
+[data-theme="amber"] .bg-\[\#0f1117\],
+[data-theme="amber"] .bg-\[\#12141c\],
+[data-theme="amber"] .bg-\[\#141620\],
+[data-theme="amber"] .bg-\[\#161824\],
+[data-theme="amber"] .bg-\[\#18181b\],
+[data-theme="amber"] .dark\:bg-\[\#18181b\] {
+  background-color: #1d180d !important;
+}
+[data-theme="amber"] .border-zinc-800,
+[data-theme="amber"] .border-\[\#27272a\],
+[data-theme="amber"] .dark\:border-\[\#27272a\] {
+  border-color: #382c19 !important;
+}
+[data-theme="amber"] .bg-blue-600 {
+  background-color: #d97706 !important;
+}
+[data-theme="amber"] .text-blue-400 {
+  color: #fbbf24 !important;
+}
+
+/* 5. MARS MANGLIK CRIMSON */
+[data-theme="crimson"] {
+  --background: #12070b !important;
+  --surface: #200d14 !important;
+  --border: #381624 !important;
+  --theme-accent: #f43f5e !important;
+}
+[data-theme="crimson"] body,
+[data-theme="crimson"] .bg-\[\#0c0e14\],
+[data-theme="crimson"] .bg-\[\#0d0f17\],
+[data-theme="crimson"] .bg-\[\#0f0f11\],
+[data-theme="crimson"] .dark\:bg-\[\#0f0f11\] {
+  background-color: #12070b !important;
+}
+[data-theme="crimson"] .bg-\[\#10121a\],
+[data-theme="crimson"] .bg-\[\#0f1117\],
+[data-theme="crimson"] .bg-\[\#12141c\],
+[data-theme="crimson"] .bg-\[\#141620\],
+[data-theme="crimson"] .bg-\[\#161824\],
+[data-theme="crimson"] .bg-\[\#18181b\],
+[data-theme="crimson"] .dark\:bg-\[\#18181b\] {
+  background-color: #200d14 !important;
+}
+[data-theme="crimson"] .border-zinc-800,
+[data-theme="crimson"] .border-\[\#27272a\],
+[data-theme="crimson"] .dark\:border-\[\#27272a\] {
+  border-color: #381624 !important;
+}
+[data-theme="crimson"] .bg-blue-600 {
+  background-color: #e11d48 !important;
+}
+[data-theme="crimson"] .text-blue-400 {
+  color: #fb7185 !important;
+}
+
+/* 6. RAHU MYSTIC AMETHYST */
+[data-theme="amethyst"] {
+  --background: #0d0818 !important;
+  --surface: #18102b !important;
+  --border: #2c1b48 !important;
+  --theme-accent: #a855f7 !important;
+}
+[data-theme="amethyst"] body,
+[data-theme="amethyst"] .bg-\[\#0c0e14\],
+[data-theme="amethyst"] .bg-\[\#0d0f17\],
+[data-theme="amethyst"] .bg-\[\#0f0f11\],
+[data-theme="amethyst"] .dark\:bg-\[\#0f0f11\] {
+  background-color: #0d0818 !important;
+}
+[data-theme="amethyst"] .bg-\[\#10121a\],
+[data-theme="amethyst"] .bg-\[\#0f1117\],
+[data-theme="amethyst"] .bg-\[\#12141c\],
+[data-theme="amethyst"] .bg-\[\#141620\],
+[data-theme="amethyst"] .bg-\[\#161824\],
+[data-theme="amethyst"] .bg-\[\#18181b\],
+[data-theme="amethyst"] .dark\:bg-\[\#18181b\] {
+  background-color: #18102b !important;
+}
+[data-theme="amethyst"] .border-zinc-800,
+[data-theme="amethyst"] .border-\[\#27272a\],
+[data-theme="amethyst"] .dark\:border-\[\#27272a\] {
+  border-color: #2c1b48 !important;
+}
+[data-theme="amethyst"] .bg-blue-600 {
+  background-color: #9333ea !important;
+}
+[data-theme="amethyst"] .text-blue-400 {
+  color: #c084fc !important;
+}
+
+/* 7. NORDIC FROST SLATE */
+[data-theme="nordic"] {
+  --background: #080e18 !important;
+  --surface: #101b2d !important;
+  --border: #1c2e4b !important;
+  --theme-accent: #0ea5e9 !important;
+}
+[data-theme="nordic"] body,
+[data-theme="nordic"] .bg-\[\#0c0e14\],
+[data-theme="nordic"] .bg-\[\#0d0f17\],
+[data-theme="nordic"] .bg-\[\#0f0f11\],
+[data-theme="nordic"] .dark\:bg-\[\#0f0f11\] {
+  background-color: #080e18 !important;
+}
+[data-theme="nordic"] .bg-\[\#10121a\],
+[data-theme="nordic"] .bg-\[\#0f1117\],
+[data-theme="nordic"] .bg-\[\#12141c\],
+[data-theme="nordic"] .bg-\[\#141620\],
+[data-theme="nordic"] .bg-\[\#161824\],
+[data-theme="nordic"] .bg-\[\#18181b\],
+[data-theme="nordic"] .dark\:bg-\[\#18181b\] {
+  background-color: #101b2d !important;
+}
+[data-theme="nordic"] .border-zinc-800,
+[data-theme="nordic"] .border-\[\#27272a\],
+[data-theme="nordic"] .dark\:border-\[\#27272a\] {
+  border-color: #1c2e4b !important;
+}
+[data-theme="nordic"] .bg-blue-600 {
+  background-color: #0284c7 !important;
+}
+[data-theme="nordic"] .text-blue-400 {
+  color: #38bdf8 !important;
+}
+
+/* 8. STRIPE ONYX MINIMAL */
+[data-theme="stripe"] {
+  --background: #030304 !important;
+  --surface: #0c0d10 !important;
+  --border: #1c1e24 !important;
+  --theme-accent: #6366f1 !important;
+}
+[data-theme="stripe"] body,
+[data-theme="stripe"] .bg-\[\#0c0e14\],
+[data-theme="stripe"] .bg-\[\#0d0f17\],
+[data-theme="stripe"] .bg-\[\#0f0f11\],
+[data-theme="stripe"] .dark\:bg-\[\#0f0f11\] {
+  background-color: #030304 !important;
+}
+[data-theme="stripe"] .bg-\[\#10121a\],
+[data-theme="stripe"] .bg-\[\#0f1117\],
+[data-theme="stripe"] .bg-\[\#12141c\],
+[data-theme="stripe"] .bg-\[\#141620\],
+[data-theme="stripe"] .bg-\[\#161824\],
+[data-theme="stripe"] .bg-\[\#18181b\],
+[data-theme="stripe"] .dark\:bg-\[\#18181b\] {
+  background-color: #0c0d10 !important;
+}
+[data-theme="stripe"] .border-zinc-800,
+[data-theme="stripe"] .border-\[\#27272a\],
+[data-theme="stripe"] .dark\:border-\[\#27272a\] {
+  border-color: #1c1e24 !important;
+}
+
+/* 9. VANTABLACK OLED WHITE (PURE ABSOLUTE ZERO BLACK & CRISP WHITE) */
+[data-theme="vantablack"] {
+  --background: #000000 !important;
+  --surface: #070709 !important;
+  --surface-subtle: #0d0d10 !important;
+  --border: #1f1f23 !important;
+  --border-subtle: #17171a !important;
+  --theme-accent: #ffffff !important;
+}
+[data-theme="vantablack"] body,
+[data-theme="vantablack"] .bg-\[\#0c0e14\],
+[data-theme="vantablack"] .bg-\[\#0d0f17\],
+[data-theme="vantablack"] .bg-\[\#0f0f11\],
+[data-theme="vantablack"] .dark\:bg-\[\#0f0f11\] {
+  background-color: #000000 !important;
+}
+[data-theme="vantablack"] .bg-\[\#10121a\],
+[data-theme="vantablack"] .bg-\[\#0f1117\],
+[data-theme="vantablack"] .bg-\[\#12141c\],
+[data-theme="vantablack"] .bg-\[\#141620\],
+[data-theme="vantablack"] .bg-\[\#161824\],
+[data-theme="vantablack"] .bg-\[\#18181b\],
+[data-theme="vantablack"] .dark\:bg-\[\#18181b\] {
+  background-color: #070709 !important;
+}
+[data-theme="vantablack"] .border-zinc-800,
+[data-theme="vantablack"] .border-\[\#27272a\],
+[data-theme="vantablack"] .dark\:border-\[\#27272a\] {
+  border-color: #1f1f23 !important;
+}
+[data-theme="vantablack"] .bg-blue-600 {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+[data-theme="vantablack"] .bg-blue-600:hover {
+  background-color: #e4e4e7 !important;
+}
+[data-theme="vantablack"] .text-blue-400 {
+  color: #ffffff !important;
+}
+[data-theme="vantablack"] .border-blue-500,
+[data-theme="vantablack"] .border-blue-500\/50,
+[data-theme="vantablack"] .border-blue-600 {
+  border-color: #ffffff !important;
+}
+[data-theme="vantablack"] .bg-blue-500\/10,
+[data-theme="vantablack"] .bg-blue-500\/20,
+[data-theme="vantablack"] .bg-blue-600\/20 {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+}
+
+/* 9. SHOPIFY POLAR LIGHT */
+[data-theme="polar"] {
+  --background: #f4f5f7 !important;
+  --foreground: #1a1a1a !important;
+  --surface: #ffffff !important;
+  --border: #e1e3e5 !important;
+  --theme-accent: #008060 !important;
+}
+[data-theme="polar"] body,
+[data-theme="polar"] .bg-\[\#0c0e14\],
+[data-theme="polar"] .bg-\[\#0d0f17\],
+[data-theme="polar"] .bg-\[\#0f0f11\],
+[data-theme="polar"] .dark\:bg-\[\#0f0f11\] {
+  background-color: #f4f5f7 !important;
+  color: #18181b !important;
+}
+[data-theme="polar"] .bg-\[\#10121a\],
+[data-theme="polar"] .bg-\[\#0f1117\],
+[data-theme="polar"] .bg-\[\#12141c\],
+[data-theme="polar"] .bg-\[\#141620\],
+[data-theme="polar"] .bg-\[\#161824\],
+[data-theme="polar"] .bg-\[\#18181b\],
+[data-theme="polar"] .dark\:bg-\[\#18181b\] {
+  background-color: #ffffff !important;
+  color: #18181b !important;
+}
+[data-theme="polar"] .border-zinc-800,
+[data-theme="polar"] .border-\[\#27272a\],
+[data-theme="polar"] .dark\:border-\[\#27272a\] {
+  border-color: #e2e4e8 !important;
+}
+[data-theme="polar"] .text-white {
+  color: #09090b !important;
+}
+[data-theme="polar"] .text-zinc-200,
+[data-theme="polar"] .text-zinc-300 {
+  color: #27272a !important;
+}
+[data-theme="polar"] .text-zinc-400,
+[data-theme="polar"] .text-zinc-500 {
+  color: #52525b !important;
+}
+[data-theme="polar"] .bg-zinc-900,
+[data-theme="polar"] .bg-zinc-800 {
+  background-color: #f1f2f4 !important;
+  color: #18181b !important;
+}
+[data-theme="polar"] .bg-blue-600 {
+  background-color: #008060 !important;
+  color: #ffffff !important;
+}
+
+/* 10. LINEAR TITANIUM TECH */
+[data-theme="titanium"] {
+  --background: #0c0e12 !important;
+  --surface: #151820 !important;
+  --border: #242834 !important;
+  --theme-accent: #fb7185 !important;
+}
+[data-theme="titanium"] body,
+[data-theme="titanium"] .bg-\[\#0c0e14\],
+[data-theme="titanium"] .bg-\[\#0d0f17\],
+[data-theme="titanium"] .bg-\[\#0f0f11\],
+[data-theme="titanium"] .dark\:bg-\[\#0f0f11\] {
+  background-color: #0c0e12 !important;
+}
+[data-theme="titanium"] .bg-\[\#10121a\],
+[data-theme="titanium"] .bg-\[\#0f1117\],
+[data-theme="titanium"] .bg-\[\#12141c\],
+[data-theme="titanium"] .bg-\[\#141620\],
+[data-theme="titanium"] .bg-\[\#161824\],
+[data-theme="titanium"] .bg-\[\#18181b\],
+[data-theme="titanium"] .dark\:bg-\[\#18181b\] {
+  background-color: #151820 !important;
+}
+[data-theme="titanium"] .border-zinc-800,
+[data-theme="titanium"] .border-\[\#27272a\],
+[data-theme="titanium"] .dark\:border-\[\#27272a\] {
+  border-color: #242834 !important;
+}
+[data-theme="titanium"] .bg-blue-600 {
+  background-color: #e11d48 !important;
+}
+[data-theme="titanium"] .text-blue-400 {
+  color: #fb7185 !important;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  overflow-x: hidden;
+  transition: background-color 0.25s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s ease;
+}
+
+/* Custom crisp scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.45);
+}
+
+/* Shopify style tooltip underline */
+.dotted-tooltip {
+  border-bottom: 1px dotted #8c8c8c;
+  cursor: help;
+}
+
+/* Smooth micro-interactions */
+.shopify-interactive {
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.shopify-interactive:active {
+  transform: scale(0.985);
+}
+
+/* Keyframes and Animations */
+@keyframes cardLiftUp {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+  }
+  100% {
+    transform: translateY(-140%) scale(0.95);
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+@keyframes slideInFromLeft {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInScale {
+  0% {
+    transform: scale(0.97);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-card-lift {
+  animation: cardLiftUp 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-in-left {
+  animation: slideInFromLeft 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fade-scale {
+  animation: fadeInScale 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes popoverSpring {
+  0% {
+    opacity: 0;
+    transform: scale(0.96) translateY(-6px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-popover {
+  animation: popoverSpring 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes pageSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-32px) scale(0.995);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.animate-page-slide {
+  animation: pageSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.glow-blue {
+  box-shadow: 0 0 25px -4px rgba(59, 130, 246, 0.25);
+}
+
+.glow-purple {
+  box-shadow: 0 0 25px -4px rgba(168, 85, 247, 0.25);
+}
+
+.glow-rose {
+  box-shadow: 0 0 25px -4px rgba(244, 63, 94, 0.25);
+}
+
+@keyframes rowFadeSlide {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-row-enter {
+  animation: rowFadeSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
