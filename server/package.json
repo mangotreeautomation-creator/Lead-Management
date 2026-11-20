@@ -1,0 +1,38 @@
+{
+  "name": "leadpulse-enterprise-server",
+  "version": "1.0.0",
+  "description": "Production Modular Monolith Backend for LeadPulse Enterprise",
+  "main": "src/server.ts",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx src/database/migrate.ts",
+    "db:seed": "tsx src/database/seeds/seed.ts",
+    "db:studio": "drizzle-kit studio",
+    "test": "tsx --test src/**/*.test.ts"
+  },
+  "dependencies": {
+    "@fastify/cookie": "^9.4.0",
+    "@fastify/cors": "^9.0.1",
+    "@fastify/helmet": "^11.1.1",
+    "@fastify/rate-limit": "^9.1.0",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.5",
+    "drizzle-orm": "^0.36.0",
+    "fastify": "^4.28.1",
+    "pg": "^8.13.0",
+    "pino": "^9.5.0",
+    "pino-pretty": "^11.3.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20.17.0",
+    "@types/pg": "^8.11.10",
+    "drizzle-kit": "^0.28.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}
