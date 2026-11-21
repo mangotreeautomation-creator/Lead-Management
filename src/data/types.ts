@@ -68,6 +68,15 @@ export interface DynamicFilterParams {
   leadStatus: 'ALL' | LeadStatus;
   landingPageSlug: 'ALL' | string;
   landingPageSlugs?: string[];
+  reportLanguage?: 'ALL' | string;
+  reportLanguages?: string[];
+  product?: 'ALL' | string;
+  paymentType?: 'ALL' | string;
+  metaCampaign?: 'ALL' | string;
+  metaAdSet?: 'ALL' | string;
+  metaCreative?: 'ALL' | string;
+  utmSource?: 'ALL' | string;
+  utmMedium?: 'ALL' | string;
   videoCreativeId: 'ALL' | string;
   videoCreativeIds?: string[];
   telephonyStatus: 'ALL' | 'CONNECTED' | 'NO_ANSWER' | 'FAILED';
@@ -80,6 +89,12 @@ export interface DynamicFilterParams {
     customerPhone: boolean;
     city: boolean;
     landingPage: boolean;
+    reportLanguage?: boolean;
+    uniqueCustomerId?: boolean;
+    metaCampaign?: boolean;
+    utmMedium?: boolean;
+    propertyType?: boolean;
+    entranceDirection?: boolean;
     videoCreative: boolean;
     orderAmount: boolean;
     paymentStatus: boolean;
@@ -277,6 +292,11 @@ export interface Lead {
   aiCallStatus?: CallStatus;
   watiStatus?: WatiStatus;
   whatsappAiStatus?: ConversationStatus;
+  reportLanguage?: string;
+  uniqueCustomerId?: string;
+  propertyType?: string;
+  entranceDirection?: string;
+  paymentType?: string;
 }
 
 export interface Order {

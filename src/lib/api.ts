@@ -95,6 +95,12 @@ export class ApiClient {
     startDate?: string;
     endDate?: string;
     creative?: string;
+    landingPage?: string;
+    reportLanguage?: string;
+    metaCampaign?: string;
+    utmTerm?: string;
+    utmSource?: string;
+    utmMedium?: string;
   } = {}): Promise<any> {
     const searchParams = new URLSearchParams();
     if (params.page) searchParams.set('page', params.page.toString());
@@ -106,6 +112,12 @@ export class ApiClient {
     if (params.startDate) searchParams.set('startDate', params.startDate);
     if (params.endDate) searchParams.set('endDate', params.endDate);
     if (params.creative && params.creative !== 'ALL') searchParams.set('creative', params.creative);
+    if (params.landingPage && params.landingPage !== 'ALL') searchParams.set('landingPage', params.landingPage);
+    if (params.reportLanguage && params.reportLanguage !== 'ALL') searchParams.set('reportLanguage', params.reportLanguage);
+    if (params.metaCampaign && params.metaCampaign !== 'ALL') searchParams.set('metaCampaign', params.metaCampaign);
+    if (params.utmTerm && params.utmTerm !== 'ALL') searchParams.set('utmTerm', params.utmTerm);
+    if (params.utmSource && params.utmSource !== 'ALL') searchParams.set('utmSource', params.utmSource);
+    if (params.utmMedium && params.utmMedium !== 'ALL') searchParams.set('utmMedium', params.utmMedium);
 
     const query = searchParams.toString();
     return this.request(`/leads${query ? `?${query}` : ''}`);
@@ -138,16 +150,62 @@ export class ApiClient {
   }
 
   // Razorpay Payments
-  async getPayments(params: { page?: number; limit?: number; status?: string; startDate?: string; endDate?: string } = {}): Promise<any> {
+  async getPayments(params: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+    landingPage?: string;
+    reportLanguage?: string;
+    companyCode?: string;
+  } = {}): Promise<any> {
     const searchParams = new URLSearchParams();
     if (params.page) searchParams.set('page', params.page.toString());
     if (params.limit) searchParams.set('limit', params.limit.toString());
     if (params.status && params.status !== 'ALL') searchParams.set('status', params.status);
     if (params.startDate) searchParams.set('startDate', params.startDate);
     if (params.endDate) searchParams.set('endDate', params.endDate);
+    if (params.landingPage && params.landingPage !== 'ALL') searchParams.set('landingPage', params.landingPage);
+    if (params.reportLanguage && params.reportLanguage !== 'ALL') searchParams.set('reportLanguage', params.reportLanguage);
+    if (params.companyCode && params.companyCode !== 'ALL') searchParams.set('companyCode', params.companyCode);
 
     const query = searchParams.toString();
     return this.request(`/payments${query ? `?${query}` : ''}`);
+  }
+
+  // Attribution & Landing Page Registry
+  async getLandingPages(): Promise<any> {
+    return this.request('/attribution/landing-pages');
+  }
+
+  async registerLandingPage(body: { routeSlug: string; fullUrl?: string; title?: string; categoryCode?: string }): Promise<any> {
+    return this.request('/attribution/landing-pages', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  }
+
+  async getReportLanguages(params: { landingPage?: string; startDate?: string; endDate?: string } = {}): Promise<any> {
+    const searchParams = new URLSearchParams();
+    if (params.landingPage && params.landingPage !== 'ALL') searchParams.set('landingPage', params.landingPage);
+    if (params.startDate) searchParams.set('startDate', params.startDate);
+    if (params.endDate) searchParams.set('endDate', params.endDate);
+    const query = searchParams.toString();
+    return this.request(`/attribution/report-languages${query ? `?${query}` : ''}`);
+  }
+
+  async getFb4Summary(): Promise<any> {
+    return this.request('/attribution/fb4-summary');
+  }
+
+  async getAttributionFilterOptions(params: { companyCode?: string; categoryCode?: string; landingPage?: string } = {}): Promise<any> {
+    const searchParams = new URLSearchParams();
+    if (params.companyCode && params.companyCode !== 'ALL') searchParams.set('companyCode', params.companyCode);
+    if (params.categoryCode && params.categoryCode !== 'ALL') searchParams.set('categoryCode', params.categoryCode);
+    if (params.landingPage && params.landingPage !== 'ALL') searchParams.set('landingPage', params.landingPage);
+    const query = searchParams.toString();
+    return this.request(`/attribution/filter-options${query ? `?${query}` : ''}`);
   }
 
   // Meta Marketing API

@@ -896,7 +896,16 @@ export class RazorpayService {
   /**
    * Get payments with pagination and filter criteria
    */
-  async listPayments(options: { page?: number; limit?: number; status?: string; startDate?: string; endDate?: string }) {
+  async listPayments(options: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+    landingPage?: string;
+    reportLanguage?: string;
+    companyCode?: string;
+  }) {
     const page = Math.max(1, options.page || 1);
     const limit = Math.min(1000, options.limit || 25);
     const offset = (page - 1) * limit;
@@ -909,6 +918,16 @@ export class RazorpayService {
     }
     if (options.status && options.status !== 'ALL') {
       conditions.push(eq(capturedPayments.status, options.status));
+    }
+    if (options.landingPage && options.landingPage !== 'ALL') {
+      const slug = options.landingPage.toLowerCase().trim();
+      conditions.push(sql`(LOWER(COALESCE(${paymentOrders.notes}->>'route', ${paymentOrders.notes}->>'campaign', '')) = ${slug})`);
+    }
+    if (options.reportLanguage && options.reportLanguage !== 'ALL') {
+      conditions.push(sql`(${paymentOrders.notes}->>'report_language' = ${options.reportLanguage})`);
+    }
+    if (options.companyCode && options.companyCode !== 'ALL') {
+      conditions.push(eq(companies.code, options.companyCode));
     }
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
@@ -925,11 +944,13 @@ export class RazorpayService {
         method: capturedPayments.method,
         capturedAt: capturedPayments.capturedAt,
         orderId: paymentOrders.razorpayOrderId,
+        notes: paymentOrders.notes,
         gatewayName: gatewayAccounts.name,
       })
       .from(capturedPayments)
       .innerJoin(paymentOrders, eq(capturedPayments.paymentOrderId, paymentOrders.id))
       .innerJoin(gatewayAccounts, eq(capturedPayments.gatewayAccountId, gatewayAccounts.id))
+      .leftJoin(companies, eq(gatewayAccounts.companyId, companies.id))
       .where(whereClause)
       .orderBy(desc(capturedPayments.capturedAt))
       .limit(limit)
@@ -938,6 +959,9 @@ export class RazorpayService {
     const [totalRow] = await db
       .select({ count: sql<number>`count(*)` })
       .from(capturedPayments)
+      .innerJoin(paymentOrders, eq(capturedPayments.paymentOrderId, paymentOrders.id))
+      .innerJoin(gatewayAccounts, eq(capturedPayments.gatewayAccountId, gatewayAccounts.id))
+      .leftJoin(companies, eq(gatewayAccounts.companyId, companies.id))
       .where(whereClause);
 
     return {

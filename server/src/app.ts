@@ -16,6 +16,7 @@ import { leadsRoutes } from './modules/leads/leads.routes';
 import { customersRoutes } from './modules/customers/customers.routes';
 import { overviewRoutes } from './modules/overview/overview.routes';
 import { integrationsRoutes } from './modules/integrations/integrations.routes';
+import { attributionRoutes } from './modules/attribution/attribution.routes';
 
 export function buildApp(): FastifyInstance {
   const app = Fastify({
@@ -115,6 +116,7 @@ export function buildApp(): FastifyInstance {
   app.register(customersRoutes);
   app.register(overviewRoutes);
   app.register(integrationsRoutes);
+  app.register(attributionRoutes);
 
   return app;
 }

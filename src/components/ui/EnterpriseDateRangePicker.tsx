@@ -30,19 +30,24 @@ export const EnterpriseDateRangePicker: React.FC<EnterpriseDateRangePickerProps>
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Reference year & month (Default Nov 2026 & Dec 2026 as per platform context)
-  const [viewYear, setViewYear] = useState(2026);
-  const [viewMonth, setViewMonth] = useState(10); // 10 = November (0-indexed)
+  const now = new Date();
+  const cYear = now.getFullYear();
+  const cMonth = now.getMonth();
+  const cDate = now.getDate();
+
+  const [viewYear, setViewYear] = useState(cYear);
+  const [viewMonth, setViewMonth] = useState(cMonth);
 
   // Selection states
   const initialStart = useMemo(() => {
     if (customDateRange?.startDate) return new Date(customDateRange.startDate);
-    return new Date(2026, 10, 1);
+    return new Date(2026, 9, 1);
   }, [customDateRange]);
 
   const initialEnd = useMemo(() => {
     if (customDateRange?.endDate) return new Date(customDateRange.endDate);
-    return new Date(2026, 10, 3);
-  }, [customDateRange]);
+    return new Date(cYear, cMonth, cDate);
+  }, [customDateRange, cYear, cMonth, cDate]);
 
   const [selectedStart, setSelectedStart] = useState<Date | null>(initialStart);
   const [selectedEnd, setSelectedEnd] = useState<Date | null>(initialEnd);
@@ -67,42 +72,56 @@ export const EnterpriseDateRangePicker: React.FC<EnterpriseDateRangePickerProps>
     setActivePreset(dateRange);
   }, [dateRange]);
 
-  // Preset definitions exactly matching Image 4 & enterprise SaaS needs
+  // Preset definitions
   const presets: { id: DateRangeOption; label: string; getRange: () => { start: Date; end: Date } }[] = [
     {
       id: 'TODAY',
       label: 'Today',
-      getRange: () => ({ start: new Date(2026, 10, 20), end: new Date(2026, 10, 20) })
+      getRange: () => {
+        const today = new Date(cYear, cMonth, cDate);
+        return { start: today, end: today };
+      }
     },
     {
       id: 'YESTERDAY',
       label: 'Yesterday',
-      getRange: () => ({ start: new Date(2026, 10, 19), end: new Date(2026, 10, 19) })
+      getRange: () => {
+        const y = new Date(cYear, cMonth, cDate - 1);
+        return { start: y, end: y };
+      }
     },
     {
       id: 'LAST_7_DAYS',
       label: 'Last 7 Days',
-      getRange: () => ({ start: new Date(2026, 10, 14), end: new Date(2026, 10, 20) })
+      getRange: () => {
+        const s = new Date(cYear, cMonth, cDate - 6);
+        const e = new Date(cYear, cMonth, cDate);
+        return { start: s, end: e };
+      }
     },
     {
       id: 'LAST_30_DAYS',
       label: 'Last 30 Days',
-      getRange: () => ({ start: new Date(2026, 9, 22), end: new Date(2026, 10, 20) })
+      getRange: () => {
+        const s = new Date(cYear, cMonth, cDate - 29);
+        const e = new Date(cYear, cMonth, cDate);
+        return { start: s, end: e };
+      }
     },
     {
       id: 'THIS_MONTH',
-      label: 'This Month (Nov 2026)',
-      getRange: () => ({ start: new Date(2026, 10, 1), end: new Date(2026, 10, 20) })
+      label: 'November 2026',
+      getRange: () => ({ start: new Date(2026, 10, 1), end: new Date(2026, 10, 30) })
     },
     {
       id: 'LAST_MONTH',
-      label: 'Last Month (Oct 2026)',
+      label: 'October 2026',
       getRange: () => ({ start: new Date(2026, 9, 1), end: new Date(2026, 9, 31) })
     },
     {
       id: 'ALL_TIME',
-      label: 'All Time (Oct 1 - Nov 20)',
-      getRange: () => ({ start: new Date(2026, 9, 1), end: new Date(2026, 10, 20) })
+      label: 'All Time (Oct 1 - Present)',
+      getRange: () => ({ start: new Date(2026, 9, 1), end: new Date(cYear, cMonth, cDate) })
     }
   ];
 
@@ -208,7 +227,7 @@ export const EnterpriseDateRangePicker: React.FC<EnterpriseDateRangePickerProps>
     }
   };
 
-  // Handle preset click
+  // Handle preset click - instantly activates the selected date range
   const handlePresetSelect = (preset: typeof presets[0]) => {
     setActivePreset(preset.id);
     const range = preset.getRange();
@@ -216,6 +235,14 @@ export const EnterpriseDateRangePicker: React.FC<EnterpriseDateRangePickerProps>
     setSelectedEnd(range.end);
     setViewYear(range.start.getFullYear());
     setViewMonth(range.start.getMonth());
+    setDateRange(preset.id);
+    const label = preset.id === 'TODAY' ? 'Today' : preset.id === 'YESTERDAY' ? 'Yesterday' : `${formatDisplay(range.start)} — ${formatDisplay(range.end)}`;
+    setCustomDateRange({
+      startDate: formatDateStr(range.start),
+      endDate: formatDateStr(range.end),
+      label
+    });
+    setIsOpen(false);
   };
 
   // Apply Range
@@ -239,15 +266,16 @@ export const EnterpriseDateRangePicker: React.FC<EnterpriseDateRangePickerProps>
 
   // Get active trigger button label
   const getTriggerLabel = () => {
-    if (customDateRange?.label && dateRange === 'CUSTOM') {
+    if (dateRange === 'CUSTOM' && customDateRange?.label) {
       return customDateRange.label;
     }
     const found = presets.find(p => p.id === dateRange);
     if (found) {
-      if (dateRange === 'TODAY') return 'Today (20 Nov)';
-      if (dateRange === 'ALL_TIME') return 'Oct 1 - Nov 20, 2026';
+      if (dateRange === 'TODAY') return 'Today';
+      if (dateRange === 'YESTERDAY') return 'Yesterday';
       return found.label;
     }
+    if (customDateRange?.label) return customDateRange.label;
     return 'Select Date Range';
   };
 

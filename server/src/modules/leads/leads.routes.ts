@@ -31,6 +31,12 @@ export async function leadsRoutes(app: FastifyInstance) {
       startDate: query.startDate,
       endDate: query.endDate,
       creative: query.creative,
+      landingPage: query.landingPage,
+      reportLanguage: query.reportLanguage,
+      metaCampaign: query.metaCampaign,
+      utmTerm: query.utmTerm,
+      utmSource: query.utmSource,
+      utmMedium: query.utmMedium,
     });
 
     return reply.status(200).send(result);

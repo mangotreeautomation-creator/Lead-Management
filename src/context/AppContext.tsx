@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useRef } from 'react';
 import {
   BusinessUnitCode,
   RazorpayAccountCode,
@@ -19,6 +19,59 @@ import {
 } from '../data/types';
 import { generateFullEnterpriseMockData, DEMO_USERS } from '../data/mockDataGenerator';
 import { apiClient } from '../lib/api';
+
+export function resolveActiveDateRange(
+  preset: DateRangeOption,
+  custom?: CustomDateRange | null
+): { startDate?: string; endDate?: string } {
+  if (preset === 'CUSTOM' && custom?.startDate && custom?.endDate) {
+    return { startDate: custom.startDate, endDate: custom.endDate };
+  }
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const date = now.getDate();
+
+  const fmt = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  switch (preset) {
+    case 'TODAY': {
+      const todayStr = fmt(new Date(year, month, date));
+      return { startDate: todayStr, endDate: todayStr };
+    }
+    case 'YESTERDAY': {
+      const yestStr = fmt(new Date(year, month, date - 1));
+      return { startDate: yestStr, endDate: yestStr };
+    }
+    case 'LAST_7_DAYS': {
+      const s = fmt(new Date(year, month, date - 6));
+      const e = fmt(new Date(year, month, date));
+      return { startDate: s, endDate: e };
+    }
+    case 'LAST_30_DAYS': {
+      const s = fmt(new Date(year, month, date - 29));
+      const e = fmt(new Date(year, month, date));
+      return { startDate: s, endDate: e };
+    }
+    case 'THIS_MONTH': {
+      return { startDate: `${year}-11-01`, endDate: `${year}-11-30` };
+    }
+    case 'LAST_MONTH': {
+      return { startDate: `${year}-10-01`, endDate: `${year}-10-31` };
+    }
+    case 'ALL_TIME':
+    default:
+      if (custom?.startDate && custom?.endDate) {
+        return { startDate: custom.startDate, endDate: custom.endDate };
+      }
+      return { startDate: undefined, endDate: undefined };
+  }
+}
 
 export type NavigationModule = 
   | 'overview'
@@ -367,12 +420,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Live Backend Health State & Periodic Polling
   const [isBackendConnected, setIsBackendConnected] = useState<boolean>(false);
 
+  // Authoritative Ref for persistent active filters across background polls
+  const activeFilterParamsRef = useRef({
+    customDateRange,
+    dateRange,
+    selectedCompany,
+    selectedVertical,
+    dynamicFilter,
+  });
+
+  useEffect(() => {
+    activeFilterParamsRef.current = {
+      customDateRange,
+      dateRange,
+      selectedCompany,
+      selectedVertical,
+      dynamicFilter,
+    };
+  }, [customDateRange, dateRange, selectedCompany, selectedVertical, dynamicFilter]);
+
   const syncLiveDataFromBackend = async () => {
     try {
-      const activeStartDate = customDateRange?.startDate;
-      const activeEndDate = customDateRange?.endDate;
-      const companyCode = selectedCompany !== 'ALL' ? selectedCompany : undefined;
-      const categoryCode = selectedVertical !== 'ALL' ? selectedVertical : undefined;
+      const {
+        customDateRange: activeCustom,
+        dateRange: activePreset,
+        selectedCompany: activeCompany,
+        selectedVertical: activeVertical,
+        dynamicFilter: activeDynFilter,
+      } = activeFilterParamsRef.current;
+
+      const { startDate: activeStartDate, endDate: activeEndDate } = resolveActiveDateRange(activePreset, activeCustom);
+      const companyCode = activeCompany !== 'ALL' ? activeCompany : undefined;
+      const categoryCode = activeVertical !== 'ALL' ? activeVertical : undefined;
+      const landingPage = activeDynFilter.landingPageSlug !== 'ALL' ? activeDynFilter.landingPageSlug : undefined;
+      const reportLanguage = activeDynFilter.reportLanguage !== 'ALL' ? activeDynFilter.reportLanguage : undefined;
+      const metaCampaign = activeDynFilter.metaCampaign !== 'ALL' ? activeDynFilter.metaCampaign : undefined;
 
       const [leadsRes, payRes, refRes, creativesRes, campPerfRes] = await Promise.all([
         apiClient.getLeads({
@@ -381,11 +463,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           endDate: activeEndDate,
           companyCode,
           category: categoryCode,
+          landingPage,
+          reportLanguage,
+          metaCampaign,
         }),
         apiClient.getPayments({
           limit: 1000,
           startDate: activeStartDate,
           endDate: activeEndDate,
+          landingPage,
+          reportLanguage,
+          companyCode,
         }),
         apiClient.getRefunds(),
         apiClient.getVideoCreatives().catch(() => ({ data: [] })),
@@ -404,9 +492,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           company: l.company?.code || 'GLOBALINCH',
           subCategory: 'Vastu Wheel Automated Report',
           productName: l.metadata?.product === 'report' ? '16-Zone VastuWheel Report' : (l.metadata?.product || '16-Zone VastuWheel Report'),
-          landingPageId: 'lp_vastu_03',
-          landingPageCode: 'vastuwheel-report-v1',
-          landingPageSlug: 'vastuwheel-report',
+          landingPageId: l.metadata?.route || 'fb4',
+          landingPageCode: l.metadata?.route || 'fb4',
+          landingPageSlug: l.metadata?.route || l.metadata?.campaign || 'fb4',
+          reportLanguage: l.metadata?.reportLanguage || null,
+          uniqueCustomerId: l.metadata?.uniqueCustomerId || null,
+          propertyType: l.metadata?.propertyType || null,
+          entranceDirection: l.metadata?.entranceDirection || null,
+          paymentType: l.metadata?.paymentType || 'vastu_report',
           adCreativeId: l.tracking?.utmContent || 'vid_vastu_03',
           adCreativeName: l.tracking?.utmContent || 'VastuWheel 16-Zone Directional Diagnostic',
           leadStatus: l.status,
@@ -418,6 +511,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           utmSource: l.tracking?.utmSource || 'facebook',
           utmMedium: l.tracking?.utmMedium || 'cpc',
           utmCampaign: l.tracking?.utmCampaign || 'vastuwheel_meta',
+          utmTerm: l.tracking?.utmTerm || null,
+          utmContent: l.tracking?.utmContent || null,
           capturedRevenue: l.status === 'CONVERTED' ? 1499.0 : 0,
         }));
 
@@ -440,6 +535,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           paymentMethod: p.method,
           accountCode: 'GLOBAL_INCH',
           razorpayAccount: 'RZP_GLOBALINCH',
+          landingPageSlug: p.notes?.route || p.notes?.campaign || 'fb4',
+          reportLanguage: p.notes?.report_language || null,
+          uniqueCustomerId: p.notes?.unique_customer_id || null,
+          notes: p.notes,
           capturedAt: p.capturedAt,
           createdAt: p.capturedAt,
         }));
@@ -653,7 +752,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (isBackendConnected) {
       syncLiveDataFromBackend();
     }
-  }, [customDateRange, selectedCompany, selectedVertical]);
+  }, [
+    dateRange,
+    customDateRange,
+    selectedCompany,
+    selectedVertical,
+    dynamicFilter.landingPageSlug,
+    dynamicFilter.reportLanguage,
+    dynamicFilter.metaCampaign,
+  ]);
 
   return (
     <AppContext.Provider

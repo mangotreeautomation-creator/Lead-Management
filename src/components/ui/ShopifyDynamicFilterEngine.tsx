@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useApp } from '../../context/AppContext';
+import { useApp, resolveActiveDateRange } from '../../context/AppContext';
 import {
   DynamicTelemetryPreset,
   CompanyCode,
@@ -36,7 +36,9 @@ import {
   MessageSquare,
   CreditCard,
   MapPin,
-  DollarSign
+  DollarSign,
+  Sparkles,
+  Tag
 } from 'lucide-react';
 
 interface ShopifyDynamicFilterEngineProps {
@@ -143,6 +145,99 @@ export const ShopifyDynamicFilterEngine: React.FC<ShopifyDynamicFilterEngineProp
     ];
   }, [db.videoCreatives, db.leads]);
 
+  // Dynamic Landing Page Funnels from verified registry + leads
+  const dynamicLandingPageOptions = React.useMemo(() => {
+    const list: Array<{ value: string; label: string }> = [
+      { value: 'fb4', label: 'fb4 (Vastu Wheel - report.globalinch.com/fb4)' },
+      { value: 'sales', label: 'sales (Vastu Wheel - report.globalinch.com/sales)' },
+      { value: 'fb1', label: 'fb1 (Vastu Wheel - report.globalinch.com/fb1)' },
+      { value: 'main', label: 'main (Vastu Wheel - report.globalinch.com/main)' }
+    ];
+    const extraSlugs = Array.from(new Set(db.leads.map(l => l.landingPageSlug).filter(Boolean))) as string[];
+    extraSlugs.forEach(slug => {
+      if (!list.some(item => item.value === slug)) {
+        list.push({ value: slug, label: `${slug} Funnel` });
+      }
+    });
+    return list;
+  }, [db.leads]);
+
+  // Dynamic Report Language Options cascading based on active landing page & company
+  const dynamicReportLanguageOptions = React.useMemo(() => {
+    const activeLps = dynamicFilter.landingPageSlugs && dynamicFilter.landingPageSlugs.length > 0
+      ? dynamicFilter.landingPageSlugs
+      : dynamicFilter.landingPageSlug !== 'ALL'
+      ? [dynamicFilter.landingPageSlug]
+      : [];
+
+    let filteredLeadsForLang = db.leads;
+    if (activeLps.length > 0) {
+      filteredLeadsForLang = filteredLeadsForLang.filter(l => l.landingPageSlug && activeLps.includes(l.landingPageSlug));
+    }
+
+    const discoveredLanguages = Array.from(new Set(filteredLeadsForLang.map(l => l.reportLanguage).filter(Boolean))) as string[];
+    if (discoveredLanguages.length > 0) {
+      return discoveredLanguages.map(lang => ({
+        value: lang,
+        label: lang
+      }));
+    }
+
+    return [
+      { value: 'Vastu Wheels English FB4', label: 'Vastu Wheels English FB4' },
+      { value: 'Vastu Wheels Hindi FB4', label: 'Vastu Wheels Hindi FB4' }
+    ];
+  }, [db.leads, dynamicFilter.landingPageSlug, dynamicFilter.landingPageSlugs]);
+
+  // Dynamic Meta Campaigns
+  const dynamicMetaCampaignOptions = React.useMemo(() => {
+    const campaigns = Array.from(new Set(db.leads.map(l => l.utmCampaign || l.campaignName).filter(Boolean))) as string[];
+    if (campaigns.length > 0) {
+      return campaigns.map(c => ({ value: c, label: c }));
+    }
+    return [
+      { value: 'VW_Report - CT - Sales - ABO - Interest - Pros - 03/Nov/2026', label: 'VW_Report - CT - Sales - ABO - Interest - Pros - 03/Nov/2026' }
+    ];
+  }, [db.leads]);
+
+  // Dynamic Meta Ad Sets
+  const dynamicMetaAdSetOptions = React.useMemo(() => {
+    const adSets = Array.from(new Set(db.leads.map(l => l.utmTerm || l.adSetName).filter(Boolean))) as string[];
+    if (adSets.length > 0) {
+      return adSets.map(s => ({ value: s, label: `Ad Set: ${s}` }));
+    }
+    return [
+      { value: '120250160685460510', label: 'Ad Set: 120250160685460510' }
+    ];
+  }, [db.leads]);
+
+  // Dynamic UTM Sources
+  const dynamicUtmSourceOptions = React.useMemo(() => {
+    const sources = Array.from(new Set(db.leads.map(l => l.utmSource).filter(Boolean))) as string[];
+    if (sources.length > 0) {
+      return sources.map(s => ({ value: s, label: s }));
+    }
+    return [
+      { value: 'FB', label: 'FB (Meta Facebook)' },
+      { value: 'Instagram', label: 'Instagram Ads' },
+      { value: 'Google', label: 'Google Ads' },
+      { value: 'Direct', label: 'Direct / Organic' }
+    ];
+  }, [db.leads]);
+
+  // Dynamic UTM Mediums
+  const dynamicUtmMediumOptions = React.useMemo(() => {
+    const mediums = Array.from(new Set(db.leads.map(l => l.utmMedium).filter(Boolean))) as string[];
+    if (mediums.length > 0) {
+      return mediums.map(m => ({ value: m, label: m.replace(/_/g, ' ') }));
+    }
+    return [
+      { value: 'Facebook_Mobile_Reels', label: 'Facebook Mobile Reels' },
+      { value: 'Facebook_Mobile_Feed', label: 'Facebook Mobile Feed' },
+      { value: 'Instagram_Reels', label: 'Instagram Reels' }
+    ];
+  }, [db.leads]);
+
   // Dynamic Category Options cascading based on active company
   const dynamicCategoryOptions = React.useMemo(() => {
     const activeComp = dynamicFilter.company !== 'ALL' ? dynamicFilter.company : selectedCompany;
@@ -173,6 +268,18 @@ export const ShopifyDynamicFilterEngine: React.FC<ShopifyDynamicFilterEngineProp
   // Available Filter Parameters definition (Matching Image 3 & 4)
   const filterParameters = [
     {
+      key: 'landingPageSlug',
+      label: 'Landing page funnel',
+      icon: Globe,
+      options: dynamicLandingPageOptions
+    },
+    {
+      key: 'reportLanguage',
+      label: 'Report language',
+      icon: MessageSquare,
+      options: dynamicReportLanguageOptions
+    },
+    {
       key: 'paymentStatus',
       label: 'Payment status',
       icon: CreditCard,
@@ -195,22 +302,54 @@ export const ShopifyDynamicFilterEngine: React.FC<ShopifyDynamicFilterEngineProp
       ]
     },
     {
-      key: 'landingPageSlug',
-      label: 'Landing page funnel',
-      icon: Globe,
-      options: [
-        { value: 'vastuwheel-report', label: 'vastuwheel-report (Live)' },
-        { value: 'astro-kundali-horoscope', label: 'astro-kundali-horoscope' },
-        { value: 'vastu-audit-floorplan', label: 'vastu-audit-floorplan' },
-        { value: 'palmistry-ai-scan', label: 'palmistry-ai-scan' },
-        { value: 'consultancy-vip', label: 'consultancy-vip' }
-      ]
+      key: 'metaCampaign',
+      label: 'Meta ad campaign',
+      icon: TrendingUp,
+      options: dynamicMetaCampaignOptions
+    },
+    {
+      key: 'metaAdSet',
+      label: 'Meta ad set (UTM Term)',
+      icon: Layers,
+      options: dynamicMetaAdSetOptions
     },
     {
       key: 'videoCreativeId',
-      label: 'Meta video ad creative',
+      label: 'Meta creative (UTM Content)',
       icon: Film,
       options: dynamicCreativeOptions
+    },
+    {
+      key: 'utmSource',
+      label: 'UTM traffic source',
+      icon: Globe,
+      options: dynamicUtmSourceOptions
+    },
+    {
+      key: 'utmMedium',
+      label: 'UTM placement medium',
+      icon: MapPin,
+      options: dynamicUtmMediumOptions
+    },
+    {
+      key: 'product',
+      label: 'Product',
+      icon: Sparkles,
+      options: [
+        { value: 'report', label: 'report (Vastu Wheel Report)' },
+        { value: 'consultancy', label: 'consultancy (Vastu Consultation)' },
+        { value: 'webinar', label: 'webinar (Live Webinar)' }
+      ]
+    },
+    {
+      key: 'paymentType',
+      label: 'Payment type',
+      icon: Tag,
+      options: [
+        { value: 'vastu_report', label: 'vastu_report' },
+        { value: 'consultancy', label: 'consultancy' },
+        { value: 'webinar_registration', label: 'webinar_registration' }
+      ]
     },
     {
       key: 'company',
@@ -292,6 +431,82 @@ export const ShopifyDynamicFilterEngine: React.FC<ShopifyDynamicFilterEngineProp
     });
   }
 
+  // 3b. Report Language chips
+  const activeReportLanguages = dynamicFilter.reportLanguages && dynamicFilter.reportLanguages.length > 0
+    ? dynamicFilter.reportLanguages
+    : dynamicFilter.reportLanguage && dynamicFilter.reportLanguage !== 'ALL'
+    ? [dynamicFilter.reportLanguage]
+    : [];
+
+  if (activeReportLanguages.length > 0) {
+    activeFilterChips.push({
+      key: 'reportLanguage',
+      label: 'Report language',
+      valueLabel: activeReportLanguages.join(', '),
+      onRemove: () => setDynamicFilter(prev => ({ ...prev, reportLanguage: 'ALL', reportLanguages: [] }))
+    });
+  }
+
+  // 3c. Meta Campaign chips
+  if (dynamicFilter.metaCampaign && dynamicFilter.metaCampaign !== 'ALL') {
+    activeFilterChips.push({
+      key: 'metaCampaign',
+      label: 'Meta campaign',
+      valueLabel: dynamicFilter.metaCampaign,
+      onRemove: () => setDynamicFilter(prev => ({ ...prev, metaCampaign: 'ALL' }))
+    });
+  }
+
+  // 3d. Meta Ad Set chips
+  if (dynamicFilter.metaAdSet && dynamicFilter.metaAdSet !== 'ALL') {
+    activeFilterChips.push({
+      key: 'metaAdSet',
+      label: 'Ad set',
+      valueLabel: dynamicFilter.metaAdSet,
+      onRemove: () => setDynamicFilter(prev => ({ ...prev, metaAdSet: 'ALL' }))
+    });
+  }
+
+  // 3e. UTM Source chips
+  if (dynamicFilter.utmSource && dynamicFilter.utmSource !== 'ALL') {
+    activeFilterChips.push({
+      key: 'utmSource',
+      label: 'UTM source',
+      valueLabel: dynamicFilter.utmSource,
+      onRemove: () => setDynamicFilter(prev => ({ ...prev, utmSource: 'ALL' }))
+    });
+  }
+
+  // 3f. UTM Medium chips
+  if (dynamicFilter.utmMedium && dynamicFilter.utmMedium !== 'ALL') {
+    activeFilterChips.push({
+      key: 'utmMedium',
+      label: 'UTM medium',
+      valueLabel: dynamicFilter.utmMedium,
+      onRemove: () => setDynamicFilter(prev => ({ ...prev, utmMedium: 'ALL' }))
+    });
+  }
+
+  // 3g. Product chips
+  if (dynamicFilter.product && dynamicFilter.product !== 'ALL') {
+    activeFilterChips.push({
+      key: 'product',
+      label: 'Product',
+      valueLabel: dynamicFilter.product,
+      onRemove: () => setDynamicFilter(prev => ({ ...prev, product: 'ALL' }))
+    });
+  }
+
+  // 3h. Payment Type chips
+  if (dynamicFilter.paymentType && dynamicFilter.paymentType !== 'ALL') {
+    activeFilterChips.push({
+      key: 'paymentType',
+      label: 'Payment type',
+      valueLabel: dynamicFilter.paymentType,
+      onRemove: () => setDynamicFilter(prev => ({ ...prev, paymentType: 'ALL' }))
+    });
+  }
+
   // 4. Video creatives chips
   const activeCreatives = dynamicFilter.videoCreativeIds && dynamicFilter.videoCreativeIds.length > 0
     ? dynamicFilter.videoCreativeIds
@@ -359,6 +574,15 @@ export const ShopifyDynamicFilterEngine: React.FC<ShopifyDynamicFilterEngineProp
       failureReasons: [],
       landingPageSlug: 'ALL',
       landingPageSlugs: [],
+      reportLanguage: 'ALL',
+      reportLanguages: [],
+      product: 'ALL',
+      paymentType: 'ALL',
+      metaCampaign: 'ALL',
+      metaAdSet: 'ALL',
+      metaCreative: 'ALL',
+      utmSource: 'ALL',
+      utmMedium: 'ALL',
       videoCreativeId: 'ALL',
       videoCreativeIds: [],
       telephonyStatus: 'ALL',
@@ -400,6 +624,21 @@ export const ShopifyDynamicFilterEngine: React.FC<ShopifyDynamicFilterEngineProp
       // Telephony filter
       if (activeTelephony.length > 0 && (!lead.aiCallStatus || !activeTelephony.includes(lead.aiCallStatus))) return false;
 
+      // Report language filter
+      if (activeReportLanguages.length > 0 && (!lead.reportLanguage || !activeReportLanguages.includes(lead.reportLanguage))) return false;
+
+      // Meta campaign filter
+      if (dynamicFilter.metaCampaign && dynamicFilter.metaCampaign !== 'ALL' && lead.utmCampaign !== dynamicFilter.metaCampaign && lead.campaignName !== dynamicFilter.metaCampaign) return false;
+
+      // Meta ad set filter
+      if (dynamicFilter.metaAdSet && dynamicFilter.metaAdSet !== 'ALL' && lead.utmTerm !== dynamicFilter.metaAdSet && lead.adSetName !== dynamicFilter.metaAdSet) return false;
+
+      // UTM source filter
+      if (dynamicFilter.utmSource && dynamicFilter.utmSource !== 'ALL' && lead.utmSource !== dynamicFilter.utmSource) return false;
+
+      // UTM medium filter
+      if (dynamicFilter.utmMedium && dynamicFilter.utmMedium !== 'ALL' && lead.utmMedium !== dynamicFilter.utmMedium) return false;
+
       // Payment Status filter (Multi-select)
       if (activePaymentStatuses.length > 0) {
         const order = db.orders.find(o => o.leadId === lead.id);
@@ -408,17 +647,12 @@ export const ShopifyDynamicFilterEngine: React.FC<ShopifyDynamicFilterEngineProp
         if (!activePaymentStatuses.includes(leadStatus)) return false;
       }
 
-      // Date Range Filter
-      if (dateRange === 'TODAY' && lead.createdAt && !lead.createdAt.startsWith('2026-11-20')) return false;
-      if (dateRange === 'YESTERDAY' && lead.createdAt && !lead.createdAt.startsWith('2026-11-19')) return false;
-      if (dateRange === 'LAST_7_DAYS' && lead.createdAt && lead.createdAt < '2026-11-14') return false;
-      if (dateRange === 'LAST_30_DAYS' && lead.createdAt && lead.createdAt < '2026-10-22') return false;
-      if (dateRange === 'THIS_MONTH' && lead.createdAt && lead.createdAt < '2026-11-01') return false;
-      if (dateRange === 'LAST_MONTH' && lead.createdAt && (lead.createdAt < '2026-10-01' || lead.createdAt > '2026-10-31')) return false;
-      if (dateRange === 'ALL_TIME' && lead.createdAt && (lead.createdAt < '2026-10-01' || lead.createdAt > '2026-11-20T23:59:59')) return false;
-      if (dateRange === 'CUSTOM' && customDateRange && lead.createdAt) {
+      // Date Range Filter (Dynamic and authoritative via resolveActiveDateRange)
+      const { startDate, endDate } = resolveActiveDateRange(dateRange, customDateRange);
+      if (lead.createdAt) {
         const leadDate = lead.createdAt.slice(0, 10);
-        if (leadDate < customDateRange.startDate || leadDate > customDateRange.endDate) return false;
+        if (startDate && leadDate < startDate) return false;
+        if (endDate && leadDate > endDate) return false;
       }
       return true;
     });
@@ -835,6 +1069,32 @@ export const ShopifyDynamicFilterEngine: React.FC<ShopifyDynamicFilterEngineProp
                               : [];
                             return list.includes(opt.value);
                           }
+                          if (activeParamObj.key === 'reportLanguage') {
+                            const list = dynamicFilter.reportLanguages && dynamicFilter.reportLanguages.length > 0
+                              ? dynamicFilter.reportLanguages
+                              : dynamicFilter.reportLanguage && dynamicFilter.reportLanguage !== 'ALL'
+                              ? [dynamicFilter.reportLanguage]
+                              : [];
+                            return list.includes(opt.value);
+                          }
+                          if (activeParamObj.key === 'metaCampaign') {
+                            return dynamicFilter.metaCampaign === opt.value;
+                          }
+                          if (activeParamObj.key === 'metaAdSet') {
+                            return dynamicFilter.metaAdSet === opt.value;
+                          }
+                          if (activeParamObj.key === 'utmSource') {
+                            return dynamicFilter.utmSource === opt.value;
+                          }
+                          if (activeParamObj.key === 'utmMedium') {
+                            return dynamicFilter.utmMedium === opt.value;
+                          }
+                          if (activeParamObj.key === 'product') {
+                            return dynamicFilter.product === opt.value;
+                          }
+                          if (activeParamObj.key === 'paymentType') {
+                            return dynamicFilter.paymentType === opt.value;
+                          }
                           if (activeParamObj.key === 'videoCreativeId') {
                             const list = dynamicFilter.videoCreativeIds && dynamicFilter.videoCreativeIds.length > 0
                               ? dynamicFilter.videoCreativeIds
@@ -907,6 +1167,52 @@ export const ShopifyDynamicFilterEngine: React.FC<ShopifyDynamicFilterEngineProp
                                     landingPageSlug: nextList.length === 1 ? nextList[0] : 'ALL'
                                   };
                                 });
+                              } else if (activeParamObj.key === 'reportLanguage') {
+                                setDynamicFilter(prev => {
+                                  const currentList = prev.reportLanguages && prev.reportLanguages.length > 0
+                                    ? [...prev.reportLanguages]
+                                    : prev.reportLanguage && prev.reportLanguage !== 'ALL'
+                                    ? [prev.reportLanguage]
+                                    : [];
+                                  const nextList = currentList.includes(opt.value)
+                                    ? currentList.filter(v => v !== opt.value)
+                                    : [...currentList, opt.value];
+                                  return {
+                                    ...prev,
+                                    reportLanguages: nextList,
+                                    reportLanguage: nextList.length === 1 ? nextList[0] : 'ALL'
+                                  };
+                                });
+                              } else if (activeParamObj.key === 'metaCampaign') {
+                                setDynamicFilter(prev => ({
+                                  ...prev,
+                                  metaCampaign: isChecked ? 'ALL' : opt.value
+                                }));
+                              } else if (activeParamObj.key === 'metaAdSet') {
+                                setDynamicFilter(prev => ({
+                                  ...prev,
+                                  metaAdSet: isChecked ? 'ALL' : opt.value
+                                }));
+                              } else if (activeParamObj.key === 'utmSource') {
+                                setDynamicFilter(prev => ({
+                                  ...prev,
+                                  utmSource: isChecked ? 'ALL' : opt.value
+                                }));
+                              } else if (activeParamObj.key === 'utmMedium') {
+                                setDynamicFilter(prev => ({
+                                  ...prev,
+                                  utmMedium: isChecked ? 'ALL' : opt.value
+                                }));
+                              } else if (activeParamObj.key === 'product') {
+                                setDynamicFilter(prev => ({
+                                  ...prev,
+                                  product: isChecked ? 'ALL' : opt.value
+                                }));
+                              } else if (activeParamObj.key === 'paymentType') {
+                                setDynamicFilter(prev => ({
+                                  ...prev,
+                                  paymentType: isChecked ? 'ALL' : opt.value
+                                }));
                               } else if (activeParamObj.key === 'videoCreativeId') {
                                 setDynamicFilter(prev => {
                                   const currentList = prev.videoCreativeIds && prev.videoCreativeIds.length > 0

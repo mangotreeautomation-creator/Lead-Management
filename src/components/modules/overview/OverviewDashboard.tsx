@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { useApp } from '../../../context/AppContext';
+import { useApp, resolveActiveDateRange } from '../../../context/AppContext';
 import { BusinessUnitCode, CompanyCode } from '../../../data/types';
 import { ShopifyMetricCard } from '../../ui/ShopifyMetricCard';
 import { ShopifyDynamicFilterEngine } from '../../ui/ShopifyDynamicFilterEngine';
@@ -58,6 +58,7 @@ export const OverviewDashboard: React.FC = () => {
     setActiveModule,
     setIsCategorySelectorOpen,
     dynamicFilter,
+    setDynamicFilter,
     updateFilterPreset,
     dateRange,
     customDateRange
@@ -90,6 +91,20 @@ export const OverviewDashboard: React.FC = () => {
   const effectiveCompany: CompanyCode = dynamicFilter.company !== 'ALL' ? dynamicFilter.company : selectedCompany;
   const effectiveCategory: 'ALL' | BusinessUnitCode = dynamicFilter.category !== 'ALL' ? dynamicFilter.category : selectedVertical;
 
+  // Authoritative Date Range Resolution from global dateRange & customDateRange
+  const { startDate, endDate } = useMemo(() => {
+    return resolveActiveDateRange(dateRange, customDateRange);
+  }, [dateRange, customDateRange]);
+
+  const checkDateMatch = (isoDate?: string | null) => {
+    if (!startDate && !endDate) return true;
+    if (!isoDate) return true;
+    const d = isoDate.slice(0, 10);
+    if (startDate && d < startDate) return false;
+    if (endDate && d > endDate) return false;
+    return true;
+  };
+
   // 2. Filter Leads dynamically
   const filteredLeads = useMemo(() => {
     return db.leads.filter(lead => {
@@ -97,6 +112,10 @@ export const OverviewDashboard: React.FC = () => {
       if (effectiveCompany !== 'ALL' && lead.company && lead.company !== effectiveCompany) return false;
       // Category match
       if (effectiveCategory !== 'ALL' && lead.businessUnit !== effectiveCategory) return false;
+
+      // Date Range Filter (universal across all presets)
+      if (!checkDateMatch(lead.createdAt)) return false;
+
       // Landing page filter (multi-select supported)
       const activeFunnels = dynamicFilter.landingPageSlugs && dynamicFilter.landingPageSlugs.length > 0
         ? dynamicFilter.landingPageSlugs
@@ -104,6 +123,34 @@ export const OverviewDashboard: React.FC = () => {
         ? [dynamicFilter.landingPageSlug]
         : [];
       if (activeFunnels.length > 0 && lead.landingPageSlug && !activeFunnels.includes(lead.landingPageSlug)) return false;
+
+      // Report Language filter (multi-select supported)
+      const activeReportLangs = dynamicFilter.reportLanguages && dynamicFilter.reportLanguages.length > 0
+        ? dynamicFilter.reportLanguages
+        : dynamicFilter.reportLanguage && dynamicFilter.reportLanguage !== 'ALL'
+        ? [dynamicFilter.reportLanguage]
+        : [];
+      if (activeReportLangs.length > 0 && (!lead.reportLanguage || !activeReportLangs.includes(lead.reportLanguage))) return false;
+
+      // Meta Campaign filter
+      if (dynamicFilter.metaCampaign && dynamicFilter.metaCampaign !== 'ALL') {
+        if (lead.utmCampaign !== dynamicFilter.metaCampaign && lead.campaignName !== dynamicFilter.metaCampaign) return false;
+      }
+
+      // Meta Ad Set filter
+      if (dynamicFilter.metaAdSet && dynamicFilter.metaAdSet !== 'ALL') {
+        if (lead.utmTerm !== dynamicFilter.metaAdSet && lead.adSetName !== dynamicFilter.metaAdSet) return false;
+      }
+
+      // UTM Source filter
+      if (dynamicFilter.utmSource && dynamicFilter.utmSource !== 'ALL') {
+        if (lead.utmSource !== dynamicFilter.utmSource) return false;
+      }
+
+      // UTM Medium filter
+      if (dynamicFilter.utmMedium && dynamicFilter.utmMedium !== 'ALL') {
+        if (lead.utmMedium !== dynamicFilter.utmMedium) return false;
+      }
 
       // Video creative filter (multi-select supported)
       const activeCreatives = dynamicFilter.videoCreativeIds && dynamicFilter.videoCreativeIds.length > 0
@@ -148,7 +195,7 @@ export const OverviewDashboard: React.FC = () => {
 
       return true;
     });
-  }, [db.leads, db.customers, db.orders, db.paymentAttempts, effectiveCompany, effectiveCategory, dynamicFilter, tableSearch]);
+  }, [db.leads, db.customers, db.orders, db.paymentAttempts, effectiveCompany, effectiveCategory, dynamicFilter, tableSearch, startDate, endDate]);
 
   // 3. Filter Orders for active leads
   const filteredOrders = useMemo(() => {
@@ -156,31 +203,36 @@ export const OverviewDashboard: React.FC = () => {
     return db.orders.filter(o => {
       if (effectiveCompany !== 'ALL' && o.company && o.company !== effectiveCompany) return false;
       if (effectiveCategory !== 'ALL' && o.businessUnit && o.businessUnit !== effectiveCategory) return false;
+      if (!checkDateMatch(o.createdAt)) return false;
       return leadIds.has(o.leadId) || (o.company === 'GLOBALINCH' && effectiveCompany === 'GLOBALINCH');
     });
-  }, [db.orders, filteredLeads, effectiveCompany, effectiveCategory]);
+  }, [db.orders, filteredLeads, effectiveCompany, effectiveCategory, startDate, endDate]);
 
   // 4. Filter Captured Payments
   const filteredCaptured = useMemo(() => {
     const orderIds = new Set(filteredOrders.map(o => o.id));
     return db.capturedPayments.filter(cp => {
+      const capDate = cp.capturedAt || (cp as any).createdAt;
+      if (!checkDateMatch(capDate)) return false;
       if (effectiveCompany === 'GLOBALINCH' && (cp.accountCode === 'GLOBAL_INCH' || cp.razorpayAccount === 'RZP_GLOBALINCH')) {
         return true;
       }
       return orderIds.has(cp.orderId);
     });
-  }, [db.capturedPayments, filteredOrders, effectiveCompany]);
+  }, [db.capturedPayments, filteredOrders, effectiveCompany, startDate, endDate]);
 
   // 5. Filter Payment Attempts (Captured vs Failed)
   const filteredAttempts = useMemo(() => {
     const orderIds = new Set(filteredOrders.map(o => o.id));
     return db.paymentAttempts.filter(pa => {
+      const attDate = pa.timestamp || pa.createdAt;
+      if (!checkDateMatch(attDate)) return false;
       if (effectiveCompany === 'GLOBALINCH' && (pa.accountCode === 'GLOBAL_INCH' || pa.razorpayAccount === 'RZP_GLOBALINCH')) {
         return true;
       }
       return orderIds.has(pa.orderId);
     });
-  }, [db.paymentAttempts, filteredOrders, effectiveCompany]);
+  }, [db.paymentAttempts, filteredOrders, effectiveCompany, startDate, endDate]);
 
   // Failed attempts for recovery calculations
   const failedAttempts = useMemo(() => {
@@ -198,16 +250,84 @@ export const OverviewDashboard: React.FC = () => {
   
   const filteredRefunds = useMemo(() => {
     return db.refunds.filter(r => {
+      const refDate = r.processedAt || r.createdAt;
+      if (!checkDateMatch(refDate)) return false;
       if (effectiveCompany === 'GLOBALINCH') {
         return r.razorpayAccount === 'RZP_GLOBALINCH' || !r.razorpayAccount;
       }
       return true;
     });
-  }, [db.refunds, effectiveCompany]);
+  }, [db.refunds, effectiveCompany, startDate, endDate]);
 
   const totalRefundAmount = filteredRefunds.reduce((sum, r) => sum + (r.amount || r.refundAmount || 0), 0);
   const netRevenue = grossCapturedRevenue - totalRefundAmount - totalFees - totalTax;
   const totalLeads = filteredLeads.length;
+
+  // Dynamic Report Language Intelligence Breakdown (Section 2B of requirements)
+  const reportLanguageMetrics = useMemo(() => {
+    const activeLp = dynamicFilter.landingPageSlug !== 'ALL' ? dynamicFilter.landingPageSlug : 'fb4';
+
+    const lpLeads = db.leads.filter(l => {
+      const slugMatch = l.landingPageSlug === activeLp || (!l.landingPageSlug && activeLp === 'fb4');
+      if (!slugMatch) return false;
+      if (!checkDateMatch(l.createdAt)) return false;
+      return true;
+    });
+
+    const leadIds = new Set(lpLeads.map(l => l.id));
+    const lpOrders = db.orders.filter(o => leadIds.has(o.leadId) && checkDateMatch(o.createdAt));
+
+    // Discover distinct languages
+    const languages = Array.from(new Set(lpLeads.map(l => l.reportLanguage).filter(Boolean))) as string[];
+    if (!languages.some(lang => lang.toLowerCase().includes('english'))) languages.push('Vastu Wheels English FB4');
+    if (!languages.some(lang => lang.toLowerCase().includes('hindi'))) languages.push('Vastu Wheels Hindi FB4');
+
+    const result = languages.map(lang => {
+      const isEnglish = lang.toLowerCase().includes('english');
+      const isHindi = lang.toLowerCase().includes('hindi');
+
+      const langLeads = lpLeads.filter(l => l.reportLanguage === lang || (isEnglish && l.reportLanguage?.toLowerCase().includes('english')) || (isHindi && l.reportLanguage?.toLowerCase().includes('hindi')));
+      const langLeadIds = new Set(langLeads.map(l => l.id));
+      const langOrders = lpOrders.filter(o => langLeadIds.has(o.leadId));
+      const langOrderIds = new Set(langOrders.map(o => o.id));
+
+      const langCaptured = db.capturedPayments.filter(cp => langOrderIds.has(cp.orderId) && checkDateMatch(cp.capturedAt || (cp as any).createdAt));
+      const langAttempts = db.paymentAttempts.filter(pa => langOrderIds.has(pa.orderId) && checkDateMatch(pa.timestamp || pa.createdAt));
+      const langFailed = langAttempts.filter(pa => pa.status === 'FAILED');
+
+      const capturedRevenue = langCaptured.reduce((sum, cp) => sum + (cp.amount || cp.capturedAmount || 0), 0);
+      const totalOrdersCount = langOrders.length || langLeads.length;
+      const paidCount = langCaptured.length;
+      const failedCount = langFailed.length;
+      const conversionRate = totalOrdersCount > 0 ? (paidCount / totalOrdersCount) * 100 : 0;
+
+      return {
+        language: lang,
+        displayName: isEnglish ? 'English Reports (FB4)' : isHindi ? 'Hindi Reports (FB4)' : lang,
+        totalReports: totalOrdersCount,
+        paidCount,
+        capturedRevenue,
+        failedCount,
+        conversionRate,
+      };
+    });
+
+    const totalReports = result.reduce((s, r) => s + r.totalReports, 0);
+    const totalPaid = result.reduce((s, r) => s + r.paidCount, 0);
+    const totalRevenue = result.reduce((s, r) => s + r.capturedRevenue, 0);
+    const totalFailed = result.reduce((s, r) => s + r.failedCount, 0);
+    const overallConversion = totalReports > 0 ? (totalPaid / totalReports) * 100 : 0;
+
+    return {
+      activeLp,
+      languages: result,
+      totalReports,
+      totalPaid,
+      totalRevenue,
+      totalFailed,
+      overallConversion,
+    };
+  }, [db.leads, db.orders, db.capturedPayments, db.paymentAttempts, dynamicFilter.landingPageSlug, startDate, endDate]);
 
   const totalAttempts = filteredAttempts.length;
   const capturedAttemptsCount = filteredAttempts.filter(a => a.status === 'CAPTURED').length;
@@ -578,6 +698,136 @@ export const OverviewDashboard: React.FC = () => {
               />
             </div>
           )}
+
+          {/* 1.5. REPORT LANGUAGE INTELLIGENCE (SECTION 2B: FB4 ENGLISH VS HINDI DYNAMIC BREAKDOWN) */}
+          <div className="rounded-xl border border-zinc-800 bg-[#0f1117] p-5 shadow-xl text-zinc-200">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-zinc-800 gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                  <MessageSquare className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-white">
+                      Landing Page Report Language Intelligence: /{reportLanguageMetrics.activeLp}
+                    </h3>
+                    <span className="rounded-full bg-purple-500/10 px-2 py-0.5 text-[10px] font-mono font-bold text-purple-300 border border-purple-500/20">
+                      NOTES ATTRIBUTION
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-zinc-400">
+                    Verified Razorpay Notes report_language breakdown for funnel route <code className="text-purple-300 font-mono">https://report.globalinch.com/{reportLanguageMetrics.activeLp}</code>
+                  </p>
+                </div>
+              </div>
+
+              {/* Language Filter Buttons */}
+              <div className="flex items-center gap-1.5 shrink-0 flex-wrap">
+                <button
+                  onClick={() => setDynamicFilter(prev => ({ ...prev, reportLanguage: 'ALL', reportLanguages: [] }))}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
+                    dynamicFilter.reportLanguage === 'ALL' && (!dynamicFilter.reportLanguages || dynamicFilter.reportLanguages.length === 0)
+                      ? 'bg-purple-600 text-white shadow-sm'
+                      : 'border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  All ({reportLanguageMetrics.totalReports})
+                </button>
+                {reportLanguageMetrics.languages.map(l => {
+                  const isLangActive = dynamicFilter.reportLanguage === l.language || (dynamicFilter.reportLanguages && dynamicFilter.reportLanguages.includes(l.language));
+                  return (
+                    <button
+                      key={l.language}
+                      onClick={() => setDynamicFilter(prev => ({ ...prev, reportLanguage: l.language, reportLanguages: [l.language] }))}
+                      className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
+                        isLangActive
+                          ? 'bg-purple-600 text-white shadow-sm'
+                          : 'border border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      {l.displayName.includes('English') ? 'English' : l.displayName.includes('Hindi') ? 'Hindi' : l.displayName} ({l.totalReports})
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Grid of Language Performance Breakdown */}
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+              {reportLanguageMetrics.languages.map(l => {
+                const isEnglish = l.language.toLowerCase().includes('english');
+                return (
+                  <div
+                    key={l.language}
+                    className={`rounded-xl p-3.5 border transition-all ${
+                      isEnglish
+                        ? 'border-blue-500/30 bg-blue-950/20 shadow-sm'
+                        : 'border-amber-500/30 bg-amber-950/20 shadow-sm'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
+                      <span className={`text-xs font-bold ${isEnglish ? 'text-blue-300' : 'text-amber-300'}`}>
+                        {l.displayName}
+                      </span>
+                      <span className="rounded bg-zinc-800/80 px-2 py-0.5 text-[10px] font-mono font-bold text-zinc-300">
+                        {l.conversionRate.toFixed(1)}% CVR
+                      </span>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="text-[10px] text-zinc-400 block uppercase">Total Orders</span>
+                        <span className="text-base font-extrabold text-white">{formatNumber(l.totalReports)}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-zinc-400 block uppercase">Paid / Captured</span>
+                        <span className="text-base font-extrabold text-emerald-400">{formatNumber(l.paidCount)}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-zinc-400 block uppercase">Captured Rev</span>
+                        <span className="text-sm font-extrabold text-emerald-400 font-mono">{formatCurrency(l.capturedRevenue)}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-zinc-400 block uppercase">Failed Orders</span>
+                        <span className="text-sm font-extrabold text-rose-400 font-mono">{formatNumber(l.failedCount)}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Total Summary Column */}
+              <div className="rounded-xl p-3.5 border border-purple-500/30 bg-purple-950/20 shadow-sm">
+                <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
+                  <span className="text-xs font-bold text-purple-300">
+                    Total Funnel Aggregation
+                  </span>
+                  <span className="rounded bg-purple-500/20 px-2 py-0.5 text-[10px] font-mono font-bold text-purple-300">
+                    {reportLanguageMetrics.overallConversion.toFixed(1)}% Avg CVR
+                  </span>
+                </div>
+
+                <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                  <div>
+                    <span className="text-[10px] text-zinc-400 block uppercase">Total Orders</span>
+                    <span className="text-base font-extrabold text-white">{formatNumber(reportLanguageMetrics.totalReports)}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-zinc-400 block uppercase">Paid / Captured</span>
+                    <span className="text-base font-extrabold text-emerald-400">{formatNumber(reportLanguageMetrics.totalPaid)}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-zinc-400 block uppercase">Total Captured Rev</span>
+                    <span className="text-sm font-extrabold text-emerald-400 font-mono">{formatCurrency(reportLanguageMetrics.totalRevenue)}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-zinc-400 block uppercase">Failed Orders</span>
+                    <span className="text-sm font-extrabold text-rose-400 font-mono">{formatNumber(reportLanguageMetrics.totalFailed)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* 2. SIDE-BY-SIDE: META ADS RECONCILIATION VS RAZORPAY FINANCIAL GATEWAY */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

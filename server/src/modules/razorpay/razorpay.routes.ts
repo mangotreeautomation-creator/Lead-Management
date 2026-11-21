@@ -76,6 +76,9 @@ export async function razorpayRoutes(app: FastifyInstance) {
       status: query.status,
       startDate: query.startDate,
       endDate: query.endDate,
+      landingPage: query.landingPage,
+      reportLanguage: query.reportLanguage,
+      companyCode: query.companyCode || query.company,
     });
     return reply.status(200).send(result);
   });

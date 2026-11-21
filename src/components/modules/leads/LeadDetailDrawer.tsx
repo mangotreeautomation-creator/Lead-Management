@@ -154,6 +154,54 @@ export const LeadDetailDrawer: React.FC = () => {
           </div>
         </div>
 
+        {/* Razorpay Notes & Business Parameters (Section 2C Normalized Extraction) */}
+        {(lead.reportLanguage || lead.uniqueCustomerId || lead.propertyType || lead.paymentType || lead.utmTerm) && (
+          <div className="rounded-xl border border-purple-500/20 bg-purple-950/10 p-4 shadow-sm">
+            <h5 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-purple-300">
+              <Sparkles className="h-4 w-4 text-purple-400" />
+              <span>Razorpay Verified Notes & Funnel Identity</span>
+            </h5>
+            <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+              {lead.uniqueCustomerId && (
+                <div className="rounded-lg bg-zinc-900/60 p-2.5 border border-purple-500/20">
+                  <span className="text-[10px] text-zinc-400 uppercase font-medium">Unique Customer ID</span>
+                  <p className="font-mono font-bold text-purple-300 truncate">{lead.uniqueCustomerId}</p>
+                </div>
+              )}
+              {lead.reportLanguage && (
+                <div className="rounded-lg bg-zinc-900/60 p-2.5 border border-purple-500/20">
+                  <span className="text-[10px] text-zinc-400 uppercase font-medium">Report Language</span>
+                  <p className="font-semibold text-white truncate">{lead.reportLanguage}</p>
+                </div>
+              )}
+              {lead.propertyType && (
+                <div className="rounded-lg bg-zinc-900/60 p-2.5 border border-purple-500/20">
+                  <span className="text-[10px] text-zinc-400 uppercase font-medium">Property Type</span>
+                  <p className="font-semibold text-zinc-200">{lead.propertyType}</p>
+                </div>
+              )}
+              {lead.entranceDirection && (
+                <div className="rounded-lg bg-zinc-900/60 p-2.5 border border-purple-500/20">
+                  <span className="text-[10px] text-zinc-400 uppercase font-medium">Entrance Direction</span>
+                  <p className="font-semibold text-zinc-200">{lead.entranceDirection}</p>
+                </div>
+              )}
+              {lead.utmTerm && (
+                <div className="rounded-lg bg-zinc-900/60 p-2.5 border border-purple-500/20">
+                  <span className="text-[10px] text-zinc-400 uppercase font-medium">UTM Term (Ad Set ID)</span>
+                  <p className="font-mono text-xs text-blue-300 truncate">{lead.utmTerm}</p>
+                </div>
+              )}
+              {lead.landingPageSlug && (
+                <div className="rounded-lg bg-zinc-900/60 p-2.5 border border-purple-500/20">
+                  <span className="text-[10px] text-zinc-400 uppercase font-medium">Landing Funnel</span>
+                  <p className="font-mono text-xs text-emerald-400">https://report.globalinch.com/{lead.landingPageSlug}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Marketing UTM & Source Breakdown */}
         <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-800/20">
           <h5 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">

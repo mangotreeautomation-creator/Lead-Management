@@ -25,6 +25,12 @@ export interface LeadFilterOptions {
   startDate?: string;
   endDate?: string;
   creative?: string;
+  landingPage?: string;
+  reportLanguage?: string;
+  metaCampaign?: string;
+  utmTerm?: string;
+  utmSource?: string;
+  utmMedium?: string;
 }
 
 export class LeadsService {
@@ -69,6 +75,31 @@ export class LeadsService {
 
     if (options.creative && options.creative !== 'ALL') {
       conditions.push(eq(trackingParameters.utmContent, options.creative));
+    }
+
+    if (options.landingPage && options.landingPage !== 'ALL') {
+      const slug = options.landingPage.toLowerCase().trim();
+      conditions.push(sql`(LOWER(COALESCE(${leads.metadata}->>'route', ${leads.metadata}->>'campaign', '')) = ${slug})`);
+    }
+
+    if (options.reportLanguage && options.reportLanguage !== 'ALL') {
+      conditions.push(sql`(${leads.metadata}->>'reportLanguage' = ${options.reportLanguage})`);
+    }
+
+    if (options.metaCampaign && options.metaCampaign !== 'ALL') {
+      conditions.push(eq(trackingParameters.utmCampaign, options.metaCampaign));
+    }
+
+    if (options.utmTerm && options.utmTerm !== 'ALL') {
+      conditions.push(eq(trackingParameters.utmTerm, options.utmTerm));
+    }
+
+    if (options.utmSource && options.utmSource !== 'ALL') {
+      conditions.push(eq(trackingParameters.utmSource, options.utmSource));
+    }
+
+    if (options.utmMedium && options.utmMedium !== 'ALL') {
+      conditions.push(eq(trackingParameters.utmMedium, options.utmMedium));
     }
 
     if (options.search && options.search.trim().length > 0) {

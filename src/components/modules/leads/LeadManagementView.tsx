@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { useApp } from '../../../context/AppContext';
+import { useApp, resolveActiveDateRange } from '../../../context/AppContext';
 import { Lead, BusinessUnitCode, LeadStatus, CompanyCode } from '../../../data/types';
 import { ShopifyMetricCard } from '../../ui/ShopifyMetricCard';
 import { ShopifyDynamicFilterEngine } from '../../ui/ShopifyDynamicFilterEngine';
@@ -46,6 +46,20 @@ export const LeadManagementView: React.FC = () => {
   const effectiveCompany: CompanyCode = dynamicFilter.company !== 'ALL' ? dynamicFilter.company : selectedCompany;
   const effectiveCategory: 'ALL' | BusinessUnitCode = dynamicFilter.category !== 'ALL' ? dynamicFilter.category : selectedVertical;
 
+  // Authoritative Date Range Resolution
+  const { startDate, endDate } = useMemo(() => {
+    return resolveActiveDateRange(dateRange, customDateRange);
+  }, [dateRange, customDateRange]);
+
+  const checkDateMatch = (isoDate?: string | null) => {
+    if (!startDate && !endDate) return true;
+    if (!isoDate) return true;
+    const d = isoDate.slice(0, 10);
+    if (startDate && d < startDate) return false;
+    if (endDate && d > endDate) return false;
+    return true;
+  };
+
   // 2. Filter Leads dynamically matching exact dynamic filter engine parameters
   const filteredLeads = useMemo(() => {
     return db.leads.filter(lead => {
@@ -54,6 +68,9 @@ export const LeadManagementView: React.FC = () => {
       // Category match
       if (effectiveCategory !== 'ALL' && lead.businessUnit !== effectiveCategory) return false;
 
+      // Date Range Filter (authoritative)
+      if (!checkDateMatch(lead.createdAt)) return false;
+
       // Landing page filter (multi-select supported)
       const activeFunnels = dynamicFilter.landingPageSlugs && dynamicFilter.landingPageSlugs.length > 0
         ? dynamicFilter.landingPageSlugs
@@ -61,6 +78,34 @@ export const LeadManagementView: React.FC = () => {
         ? [dynamicFilter.landingPageSlug]
         : [];
       if (activeFunnels.length > 0 && lead.landingPageSlug && !activeFunnels.includes(lead.landingPageSlug)) return false;
+
+      // Report Language filter (multi-select supported)
+      const activeReportLangs = dynamicFilter.reportLanguages && dynamicFilter.reportLanguages.length > 0
+        ? dynamicFilter.reportLanguages
+        : dynamicFilter.reportLanguage && dynamicFilter.reportLanguage !== 'ALL'
+        ? [dynamicFilter.reportLanguage]
+        : [];
+      if (activeReportLangs.length > 0 && (!lead.reportLanguage || !activeReportLangs.includes(lead.reportLanguage))) return false;
+
+      // Meta Campaign filter
+      if (dynamicFilter.metaCampaign && dynamicFilter.metaCampaign !== 'ALL') {
+        if (lead.utmCampaign !== dynamicFilter.metaCampaign && lead.campaignName !== dynamicFilter.metaCampaign) return false;
+      }
+
+      // Meta Ad Set filter
+      if (dynamicFilter.metaAdSet && dynamicFilter.metaAdSet !== 'ALL') {
+        if (lead.utmTerm !== dynamicFilter.metaAdSet && lead.adSetName !== dynamicFilter.metaAdSet) return false;
+      }
+
+      // UTM Source filter
+      if (dynamicFilter.utmSource && dynamicFilter.utmSource !== 'ALL') {
+        if (lead.utmSource !== dynamicFilter.utmSource) return false;
+      }
+
+      // UTM Medium filter
+      if (dynamicFilter.utmMedium && dynamicFilter.utmMedium !== 'ALL') {
+        if (lead.utmMedium !== dynamicFilter.utmMedium) return false;
+      }
 
       // Video creative filter (multi-select supported)
       const activeCreatives = dynamicFilter.videoCreativeIds && dynamicFilter.videoCreativeIds.length > 0
@@ -92,19 +137,6 @@ export const LeadManagementView: React.FC = () => {
         if (!activePaymentStatuses.includes(currentLeadPaymentStatus as any)) return false;
       }
 
-      // Date Range Filter (Calibrated to current live date: 2026-11-20)
-      if (dateRange === 'TODAY' && lead.createdAt && !lead.createdAt.startsWith('2026-11-20')) return false;
-      if (dateRange === 'YESTERDAY' && lead.createdAt && !lead.createdAt.startsWith('2026-11-19')) return false;
-      if (dateRange === 'LAST_7_DAYS' && lead.createdAt && lead.createdAt < '2026-11-13') return false;
-      if (dateRange === 'LAST_30_DAYS' && lead.createdAt && lead.createdAt < '2026-10-21') return false;
-      if (dateRange === 'LAST_90_DAYS' && lead.createdAt && lead.createdAt < '2026-08-20') return false;
-      if (dateRange === 'THIS_MONTH' && lead.createdAt && lead.createdAt < '2026-11-01') return false;
-      if (dateRange === 'LAST_MONTH' && lead.createdAt && (lead.createdAt < '2026-10-01' || lead.createdAt > '2026-10-31')) return false;
-      if (dateRange === 'CUSTOM' && customDateRange && lead.createdAt) {
-        const leadDate = lead.createdAt.slice(0, 10);
-        if (leadDate < customDateRange.startDate || leadDate > customDateRange.endDate) return false;
-      }
-
       // Omnibar Search query from dynamicFilter.searchQuery or globalSearch
       const q = (dynamicFilter.searchQuery || globalSearch || '').toLowerCase().trim();
       if (q) {
@@ -115,13 +147,15 @@ export const LeadManagementView: React.FC = () => {
         const cityMatch = customer?.city?.toLowerCase().includes(q);
         const creativeMatch = lead.adCreativeName?.toLowerCase().includes(q);
         const slugMatch = lead.landingPageSlug?.toLowerCase().includes(q);
+        const langMatch = lead.reportLanguage?.toLowerCase().includes(q);
+        const uidMatch = lead.uniqueCustomerId?.toLowerCase().includes(q);
         const idMatch = lead.id.toLowerCase().includes(q);
-        if (!nameMatch && !phoneMatch && !emailMatch && !cityMatch && !creativeMatch && !slugMatch && !idMatch) return false;
+        if (!nameMatch && !phoneMatch && !emailMatch && !cityMatch && !creativeMatch && !slugMatch && !langMatch && !uidMatch && !idMatch) return false;
       }
 
       return true;
     });
-  }, [db.leads, db.customers, db.orders, db.paymentAttempts, effectiveCompany, effectiveCategory, dynamicFilter, dateRange, customDateRange, globalSearch]);
+  }, [db.leads, db.customers, db.orders, db.paymentAttempts, effectiveCompany, effectiveCategory, dynamicFilter, startDate, endDate, globalSearch]);
 
   // 3. Filter Orders for active leads
   const filteredOrders = useMemo(() => {
@@ -243,15 +277,20 @@ export const LeadManagementView: React.FC = () => {
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-zinc-800 text-[11px] font-semibold uppercase text-zinc-400 bg-zinc-900/50">
-                <th className="p-3.5">Lead / Page Slug</th>
-                <th className="p-3.5">Customer Contact</th>
+                {(dynamicFilter.visibleColumns.landingPage ?? true) && <th className="p-3.5">Lead / Funnel</th>}
+                {(dynamicFilter.visibleColumns.customerName ?? true) && <th className="p-3.5">Customer Contact</th>}
+                {dynamicFilter.visibleColumns.uniqueCustomerId && <th className="p-3.5">Customer UID</th>}
+                {(dynamicFilter.visibleColumns.reportLanguage ?? true) && <th className="p-3.5">Report Language</th>}
+                {dynamicFilter.visibleColumns.metaCampaign && <th className="p-3.5">Meta Campaign</th>}
+                {dynamicFilter.visibleColumns.utmMedium && <th className="p-3.5">Placement / Medium</th>}
+                {dynamicFilter.visibleColumns.propertyType && <th className="p-3.5">Property & Vastu</th>}
                 <th className="p-3.5">Company & Track</th>
-                <th className="p-3.5">Ad Creative Attribution</th>
-                <th className="p-3.5">Payment State</th>
-                <th className="p-3.5">AI Telephony</th>
-                <th className="p-3.5">Order Value</th>
+                {(dynamicFilter.visibleColumns.videoCreative ?? true) && <th className="p-3.5">Ad Creative Attribution</th>}
+                {(dynamicFilter.visibleColumns.paymentStatus ?? true) && <th className="p-3.5">Payment State</th>}
+                {(dynamicFilter.visibleColumns.aiCallStatus ?? true) && <th className="p-3.5">AI Telephony</th>}
+                {(dynamicFilter.visibleColumns.orderAmount ?? true) && <th className="p-3.5">Order Value</th>}
                 <th className="p-3.5">Created Date</th>
-                <th className="p-3.5 text-right">Action</th>
+                {(dynamicFilter.visibleColumns.actions ?? true) && <th className="p-3.5 text-right">Action</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/60 font-sans">
@@ -268,43 +307,91 @@ export const LeadManagementView: React.FC = () => {
                     onClick={() => setSelectedLeadId(lead.id)}
                     className="hover:bg-zinc-800/40 cursor-pointer transition-colors group"
                   >
-                    <td className="p-3.5">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-mono font-bold text-blue-400">
-                          {lead.id}
+                    {(dynamicFilter.visibleColumns.landingPage ?? true) && (
+                      <td className="p-3.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono font-bold text-blue-400">
+                            {lead.id}
+                          </span>
+                          {lead.id === 'lead_ravi_001' && (
+                            <span className="rounded bg-emerald-500/20 border border-emerald-500/30 px-1.5 py-0.2 text-[9px] font-bold text-emerald-300">
+                              RECOVERY PROOF
+                            </span>
+                          )}
+                        </div>
+                        <p className="mt-0.5 text-xs text-zinc-300 font-medium">
+                          /{lead.landingPageSlug || ''}
+                        </p>
+                      </td>
+                    )}
+
+                    {(dynamicFilter.visibleColumns.customerName ?? true) && (
+                      <td className="p-3.5">
+                        {customer ? (
+                          <div>
+                            <button
+                              onClick={e => {
+                                e.stopPropagation();
+                                setSelectedCustomerId(customer.id);
+                              }}
+                              className="font-bold text-white hover:text-blue-400 flex items-center gap-1 transition-colors"
+                            >
+                              <span>{customer.fullName}</span>
+                              <ExternalLink className="h-2.5 w-2.5 text-zinc-500" />
+                            </button>
+                            <p className="text-[11px] text-zinc-400 font-mono mt-0.5">
+                              {customer.phone || customer.primaryPhone || '—'} • {customer.city || 'India'}
+                            </p>
+                          </div>
+                        ) : (
+                          <span className="text-zinc-500 italic">No Customer Profile</span>
+                        )}
+                      </td>
+                    )}
+
+                    {dynamicFilter.visibleColumns.uniqueCustomerId && (
+                      <td className="p-3.5 font-mono text-xs text-purple-300">
+                        {lead.uniqueCustomerId || '—'}
+                      </td>
+                    )}
+
+                    {(dynamicFilter.visibleColumns.reportLanguage ?? true) && (
+                      <td className="p-3.5">
+                        <span className="font-semibold text-zinc-200 block text-xs">
+                          {lead.reportLanguage || '—'}
                         </span>
-                        {lead.id === 'lead_ravi_001' && (
-                          <span className="rounded bg-emerald-500/20 border border-emerald-500/30 px-1.5 py-0.2 text-[9px] font-bold text-emerald-300">
-                            RECOVERY PROOF
+                      </td>
+                    )}
+
+                    {dynamicFilter.visibleColumns.metaCampaign && (
+                      <td className="p-3.5">
+                        <span className="text-zinc-200 block truncate max-w-[200px] text-xs" title={lead.utmCampaign || lead.campaignName}>
+                          {lead.utmCampaign || lead.campaignName || '—'}
+                        </span>
+                        {lead.utmTerm && (
+                          <span className="text-[10px] text-zinc-500 font-mono block">
+                            AdSet: {lead.utmTerm}
                           </span>
                         )}
-                      </div>
-                      <p className="mt-0.5 text-xs text-zinc-300 font-medium">
-                        /{lead.landingPageSlug || ''}
-                      </p>
-                    </td>
+                      </td>
+                    )}
 
-                    <td className="p-3.5">
-                      {customer ? (
-                        <div>
-                          <button
-                            onClick={e => {
-                              e.stopPropagation();
-                              setSelectedCustomerId(customer.id);
-                            }}
-                            className="font-bold text-white hover:text-blue-400 flex items-center gap-1 transition-colors"
-                          >
-                            <span>{customer.fullName}</span>
-                            <ExternalLink className="h-2.5 w-2.5 text-zinc-500" />
-                          </button>
-                          <p className="text-[11px] text-zinc-400 font-mono mt-0.5">
-                            {customer.phone || customer.primaryPhone || '—'} • {customer.city || 'India'}
-                          </p>
-                        </div>
-                      ) : (
-                        <span className="text-zinc-500 italic">No Customer Profile</span>
-                      )}
-                    </td>
+                    {dynamicFilter.visibleColumns.utmMedium && (
+                      <td className="p-3.5 text-zinc-300 font-mono text-[11px]">
+                        {lead.utmMedium || '—'}
+                      </td>
+                    )}
+
+                    {dynamicFilter.visibleColumns.propertyType && (
+                      <td className="p-3.5 text-xs text-zinc-300">
+                        <span>{lead.propertyType || '—'}</span>
+                        {lead.entranceDirection && (
+                          <span className="text-[10px] text-zinc-500 block">
+                            Entrance: {lead.entranceDirection}
+                          </span>
+                        )}
+                      </td>
+                    )}
 
                     <td className="p-3.5">
                       <span className="font-semibold text-zinc-200 block">
@@ -315,70 +402,80 @@ export const LeadManagementView: React.FC = () => {
                       </span>
                     </td>
 
-                    <td className="p-3.5">
-                      <span className="text-zinc-300 font-medium block">
-                        {lead.adCreativeName || 'Video 01 (House Energy)'}
-                      </span>
-                      <span className="text-[10px] text-zinc-500 font-mono">
-                        {lead.utmSource || 'facebook'} / {lead.utmCampaign || 'cbo_vastu'}
-                      </span>
-                    </td>
-
-                    <td className="p-3.5">
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
-                          paymentState === 'CAPTURED'
-                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                            : paymentState === 'FAILED'
-                            ? 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
-                            : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
-                        }`}
-                      >
-                        {paymentState}
-                      </span>
-                    </td>
-
-                    <td className="p-3.5">
-                      <span className="text-[11px] font-mono text-zinc-300 block">
-                        {lead.aiCallStatus || 'NOT_DIALED'}
-                      </span>
-                      {aiCall?.durationSeconds ? (
-                        <span className="text-[10px] text-zinc-500 font-mono">
-                          {aiCall.durationSeconds}s call
+                    {(dynamicFilter.visibleColumns.videoCreative ?? true) && (
+                      <td className="p-3.5">
+                        <span className="text-zinc-300 font-medium block">
+                          {lead.adCreativeName || 'Video 01 (House Energy)'}
                         </span>
-                      ) : null}
-                    </td>
+                        <span className="text-[10px] text-zinc-500 font-mono">
+                          {lead.utmSource || 'facebook'} / {lead.utmCampaign || 'cbo_vastu'}
+                        </span>
+                      </td>
+                    )}
 
-                    <td className="p-3.5">
-                      {order ? (
-                        <div>
-                          <span className="font-bold text-white font-mono block">
-                            {formatCurrency(order.amount)}
-                          </span>
+                    {(dynamicFilter.visibleColumns.paymentStatus ?? true) && (
+                      <td className="p-3.5">
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
+                            paymentState === 'CAPTURED'
+                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                              : paymentState === 'FAILED'
+                              ? 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
+                              : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                          }`}
+                        >
+                          {paymentState}
+                        </span>
+                      </td>
+                    )}
+
+                    {(dynamicFilter.visibleColumns.aiCallStatus ?? true) && (
+                      <td className="p-3.5">
+                        <span className="text-[11px] font-mono text-zinc-300 block">
+                          {lead.aiCallStatus || 'NOT_DIALED'}
+                        </span>
+                        {aiCall?.durationSeconds ? (
                           <span className="text-[10px] text-zinc-500 font-mono">
-                            {paymentState === 'CAPTURED' ? 'Reconciled' : 'At-risk'}
+                            {aiCall.durationSeconds}s call
                           </span>
-                        </div>
-                      ) : (
-                        <span className="text-zinc-500 font-mono">₹999.00</span>
-                      )}
-                    </td>
+                        ) : null}
+                      </td>
+                    )}
+
+                    {(dynamicFilter.visibleColumns.orderAmount ?? true) && (
+                      <td className="p-3.5">
+                        {order ? (
+                          <div>
+                            <span className="font-bold text-white font-mono block">
+                              {formatCurrency(order.amount)}
+                            </span>
+                            <span className="text-[10px] text-zinc-500 font-mono">
+                              {paymentState === 'CAPTURED' ? 'Reconciled' : 'At-risk'}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-zinc-500 font-mono">₹999.00</span>
+                        )}
+                      </td>
+                    )}
 
                     <td className="p-3.5 text-zinc-400 font-mono text-[11px]">
                       {formatDate(lead.createdAt)}
                     </td>
 
-                    <td className="p-3.5 text-right">
-                      <button
-                        onClick={e => {
-                          e.stopPropagation();
-                          setSelectedLeadId(lead.id);
-                        }}
-                        className="rounded-lg border border-zinc-700 bg-zinc-800/80 px-2.5 py-1 text-xs font-semibold text-zinc-200 hover:text-white hover:bg-zinc-700 transition-all shadow-sm"
-                      >
-                        Inspect
-                      </button>
-                    </td>
+                    {(dynamicFilter.visibleColumns.actions ?? true) && (
+                      <td className="p-3.5 text-right">
+                        <button
+                          onClick={e => {
+                            e.stopPropagation();
+                            setSelectedLeadId(lead.id);
+                          }}
+                          className="rounded-lg border border-zinc-700 bg-zinc-800/80 px-2.5 py-1 text-xs font-semibold text-zinc-200 hover:text-white hover:bg-zinc-700 transition-all shadow-sm"
+                        >
+                          Inspect
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 );
               })}

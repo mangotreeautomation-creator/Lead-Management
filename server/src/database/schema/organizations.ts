@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, timestamp, boolean, bigint } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, timestamp, boolean, bigint, index } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 export const companies = pgTable('companies', {
@@ -49,10 +49,17 @@ export const landingPages = pgTable('landing_pages', {
   id: uuid('id').defaultRandom().primaryKey(),
   categoryId: uuid('category_id').notNull().references(() => categories.id, { onDelete: 'cascade' }),
   urlPath: varchar('url_path', { length: 500 }).notNull(),
+  routeSlug: varchar('route_slug', { length: 100 }),
+  fullUrl: varchar('full_url', { length: 500 }),
   title: varchar('title', { length: 250 }).notNull(),
   status: varchar('status', { length: 20 }).notNull().default('ACTIVE'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => {
+  return {
+    routeSlugIdx: index('landing_pages_route_slug_idx').on(table.routeSlug),
+    categoryIdx: index('landing_pages_category_idx').on(table.categoryId),
+  };
 });
 
 export const sourceAccounts = pgTable('source_accounts', {
