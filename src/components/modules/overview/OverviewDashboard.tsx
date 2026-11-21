@@ -154,29 +154,33 @@ export const OverviewDashboard: React.FC = () => {
   const filteredOrders = useMemo(() => {
     const leadIds = new Set(filteredLeads.map(l => l.id));
     return db.orders.filter(o => {
-      if (effectiveCompany !== 'ALL') {
-        const lead = db.leads.find(l => l.id === o.leadId);
-        if (lead && lead.company && lead.company !== effectiveCompany) return false;
-      }
-      if (effectiveCategory !== 'ALL') {
-        const lead = db.leads.find(l => l.id === o.leadId);
-        if (lead && lead.businessUnit !== effectiveCategory) return false;
-      }
-      return leadIds.has(o.leadId);
+      if (effectiveCompany !== 'ALL' && o.company && o.company !== effectiveCompany) return false;
+      if (effectiveCategory !== 'ALL' && o.businessUnit && o.businessUnit !== effectiveCategory) return false;
+      return leadIds.has(o.leadId) || (o.company === 'GLOBALINCH' && effectiveCompany === 'GLOBALINCH');
     });
   }, [db.orders, filteredLeads, effectiveCompany, effectiveCategory]);
 
   // 4. Filter Captured Payments
   const filteredCaptured = useMemo(() => {
     const orderIds = new Set(filteredOrders.map(o => o.id));
-    return db.capturedPayments.filter(cp => orderIds.has(cp.orderId));
-  }, [db.capturedPayments, filteredOrders]);
+    return db.capturedPayments.filter(cp => {
+      if (effectiveCompany === 'GLOBALINCH' && (cp.accountCode === 'GLOBAL_INCH' || cp.razorpayAccount === 'RZP_GLOBALINCH')) {
+        return true;
+      }
+      return orderIds.has(cp.orderId);
+    });
+  }, [db.capturedPayments, filteredOrders, effectiveCompany]);
 
   // 5. Filter Payment Attempts (Captured vs Failed)
   const filteredAttempts = useMemo(() => {
     const orderIds = new Set(filteredOrders.map(o => o.id));
-    return db.paymentAttempts.filter(pa => orderIds.has(pa.orderId));
-  }, [db.paymentAttempts, filteredOrders]);
+    return db.paymentAttempts.filter(pa => {
+      if (effectiveCompany === 'GLOBALINCH' && (pa.accountCode === 'GLOBAL_INCH' || pa.razorpayAccount === 'RZP_GLOBALINCH')) {
+        return true;
+      }
+      return orderIds.has(pa.orderId);
+    });
+  }, [db.paymentAttempts, filteredOrders, effectiveCompany]);
 
   // Failed attempts for recovery calculations
   const failedAttempts = useMemo(() => {
@@ -191,7 +195,18 @@ export const OverviewDashboard: React.FC = () => {
   const grossCapturedRevenue = filteredCaptured.reduce((sum, cp) => sum + (cp.amount || cp.capturedAmount || 0), 0);
   const totalFees = filteredCaptured.reduce((sum, cp) => sum + (cp.fee || 0), 0);
   const totalTax = filteredCaptured.reduce((sum, cp) => sum + (cp.tax || 0), 0);
-  const netRevenue = grossCapturedRevenue - totalFees - totalTax;
+  
+  const filteredRefunds = useMemo(() => {
+    return db.refunds.filter(r => {
+      if (effectiveCompany === 'GLOBALINCH') {
+        return r.razorpayAccount === 'RZP_GLOBALINCH' || !r.razorpayAccount;
+      }
+      return true;
+    });
+  }, [db.refunds, effectiveCompany]);
+
+  const totalRefundAmount = filteredRefunds.reduce((sum, r) => sum + (r.amount || r.refundAmount || 0), 0);
+  const netRevenue = grossCapturedRevenue - totalRefundAmount - totalFees - totalTax;
   const totalLeads = filteredLeads.length;
 
   const totalAttempts = filteredAttempts.length;

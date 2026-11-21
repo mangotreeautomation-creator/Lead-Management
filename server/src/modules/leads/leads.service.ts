@@ -1,4 +1,4 @@
-import { eq, desc, and, or, ilike, sql } from 'drizzle-orm';
+import { eq, desc, and, or, ilike, sql, gte, lte } from 'drizzle-orm';
 import { db } from '../../database/client';
 import {
   leads,
@@ -8,6 +8,8 @@ import {
   leadStatusHistory,
   leadTouchpoints,
   trackingParameters,
+  paymentOrders,
+  capturedPayments,
   auditLogs,
 } from '../../database/schema/index';
 import { NotFoundError } from '../../utils/errors';
@@ -17,17 +19,21 @@ export interface LeadFilterOptions {
   limit?: number;
   status?: string;
   categoryCode?: string;
+  companyCode?: string;
   search?: string;
   companyId?: string;
+  startDate?: string;
+  endDate?: string;
+  creative?: string;
 }
 
 export class LeadsService {
   /**
-   * List paginated leads with relations
+   * List paginated leads with relations, tracking and date filtering
    */
   async listLeads(options: LeadFilterOptions) {
     const page = Math.max(1, options.page || 1);
-    const limit = Math.min(100, options.limit || 25);
+    const limit = Math.min(1000, options.limit || 25);
     const offset = (page - 1) * limit;
 
     const conditions: any[] = [];
@@ -36,12 +42,33 @@ export class LeadsService {
       conditions.push(eq(leads.status, options.status));
     }
 
-    if (options.categoryCode && options.categoryCode !== 'ALL') {
-      conditions.push(eq(categories.code, options.categoryCode));
+    let targetCatCode = options.categoryCode;
+    if (targetCatCode && targetCatCode !== 'ALL') {
+      if (targetCatCode.toUpperCase() === 'VASTU_REPORT') {
+        targetCatCode = 'vastuwheel';
+      }
+      conditions.push(eq(categories.code, targetCatCode));
+    }
+
+    if (options.companyCode && options.companyCode !== 'ALL') {
+      conditions.push(eq(companies.code, options.companyCode));
     }
 
     if (options.companyId) {
       conditions.push(eq(leads.companyId, options.companyId));
+    }
+
+    if (options.startDate) {
+      conditions.push(gte(leads.createdAt, new Date(options.startDate)));
+    }
+
+    if (options.endDate) {
+      const endStr = options.endDate.length === 10 ? `${options.endDate}T23:59:59.999Z` : options.endDate;
+      conditions.push(lte(leads.createdAt, new Date(endStr)));
+    }
+
+    if (options.creative && options.creative !== 'ALL') {
+      conditions.push(eq(trackingParameters.utmContent, options.creative));
     }
 
     if (options.search && options.search.trim().length > 0) {
@@ -68,6 +95,7 @@ export class LeadsService {
         source: leads.source,
         channel: leads.channel,
         notes: leads.notes,
+        metadata: leads.metadata,
         createdAt: leads.createdAt,
         updatedAt: leads.updatedAt,
         customer: {
@@ -77,6 +105,7 @@ export class LeadsService {
           email: customers.email,
           city: customers.city,
           state: customers.state,
+          totalSpentPaise: customers.totalSpentPaise,
         },
         category: {
           id: categories.id,
@@ -88,11 +117,19 @@ export class LeadsService {
           code: companies.code,
           name: companies.name,
         },
+        tracking: {
+          utmSource: trackingParameters.utmSource,
+          utmMedium: trackingParameters.utmMedium,
+          utmCampaign: trackingParameters.utmCampaign,
+          utmContent: trackingParameters.utmContent,
+          utmTerm: trackingParameters.utmTerm,
+        },
       })
       .from(leads)
       .innerJoin(customers, eq(leads.customerId, customers.id))
       .innerJoin(categories, eq(leads.categoryId, categories.id))
       .innerJoin(companies, eq(leads.companyId, companies.id))
+      .leftJoin(trackingParameters, eq(leads.id, trackingParameters.leadId))
       .where(whereClause)
       .orderBy(desc(leads.createdAt))
       .limit(limit)
@@ -104,6 +141,7 @@ export class LeadsService {
       .innerJoin(customers, eq(leads.customerId, customers.id))
       .innerJoin(categories, eq(leads.categoryId, categories.id))
       .innerJoin(companies, eq(leads.companyId, companies.id))
+      .leftJoin(trackingParameters, eq(leads.id, trackingParameters.leadId))
       .where(whereClause);
 
     const total = Number(totalRow?.count || 0);
@@ -120,7 +158,7 @@ export class LeadsService {
   }
 
   /**
-   * Get single lead by ID with complete activity and touchpoint timeline
+   * Get single lead by ID with complete activity, payments and touchpoint timeline
    */
   async getLeadById(id: string) {
     const [lead] = await db
@@ -185,11 +223,29 @@ export class LeadsService {
       .where(eq(trackingParameters.leadId, id))
       .limit(1);
 
+    // Fetch payments associated with this lead or customer
+    const payments = await db
+      .select({
+        id: capturedPayments.id,
+        paymentId: capturedPayments.razorpayPaymentId,
+        amountPaise: capturedPayments.amountPaise,
+        amount: sql<number>`${capturedPayments.amountPaise} / 100`,
+        status: capturedPayments.status,
+        method: capturedPayments.method,
+        capturedAt: capturedPayments.capturedAt,
+        orderId: paymentOrders.razorpayOrderId,
+      })
+      .from(capturedPayments)
+      .innerJoin(paymentOrders, eq(capturedPayments.paymentOrderId, paymentOrders.id))
+      .where(or(eq(paymentOrders.leadId, id), eq(paymentOrders.customerId, lead.customer.id)))
+      .orderBy(desc(capturedPayments.capturedAt));
+
     return {
       ...lead,
       touchpoints,
       statusHistory,
       tracking: tracking || null,
+      payments,
     };
   }
 
@@ -198,40 +254,42 @@ export class LeadsService {
    */
   async updateLeadStatus(id: string, newStatus: string, userId?: string, reason?: string) {
     const [existing] = await db.select().from(leads).where(eq(leads.id, id)).limit(1);
+
     if (!existing) {
       throw new NotFoundError(`Lead with ID ${id} not found`);
     }
 
     const oldStatus = existing.status;
 
-    await db
+    const [updated] = await db
       .update(leads)
       .set({
         status: newStatus,
         updatedAt: new Date(),
       })
-      .where(eq(leads.id, id));
+      .where(eq(leads.id, id))
+      .returning();
 
-    // Record in status history
     await db.insert(leadStatusHistory).values({
       leadId: id,
       oldStatus,
       newStatus,
       changedByUserId: userId || null,
-      reason: reason || 'Updated via LeadPulse Platform',
+      reason: reason || 'Manual status transition via CRM',
     });
 
-    // Record in audit log
-    await db.insert(auditLogs).values({
-      userId: userId || null,
-      action: 'UPDATE_STATUS',
-      entityName: 'leads',
-      entityId: id,
-      oldValues: { status: oldStatus },
-      newValues: { status: newStatus, reason },
-    });
+    if (userId) {
+      await db.insert(auditLogs).values({
+        userId,
+        entityName: 'leads',
+        entityId: id,
+        action: 'UPDATE_STATUS',
+        oldValues: { oldStatus },
+        newValues: { newStatus, reason },
+      });
+    }
 
-    return this.getLeadById(id);
+    return updated;
   }
 }
 

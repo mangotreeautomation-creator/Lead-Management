@@ -227,6 +227,8 @@ export interface VideoCreative {
   id: string;
   code: string;
   name: string;
+  creativeName?: string;
+  title?: string;
   vertical: BusinessUnitCode;
   subCategory?: string;
   videoDuration: string;
@@ -310,6 +312,7 @@ export interface PaymentAttempt {
   leadId?: string;
   businessUnit?: BusinessUnitCode;
   razorpayAccount?: RazorpayAccountCode;
+  accountCode?: RazorpayAccountCode | string;
   amount: number;
   currency?: string;
   attemptNumber?: number;

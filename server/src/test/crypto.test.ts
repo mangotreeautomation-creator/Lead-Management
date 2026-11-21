@@ -17,7 +17,7 @@ test('Crypto: Password hashing and comparison', async () => {
 });
 
 test('Crypto: Razorpay HMAC-SHA256 signature verification', () => {
-  const secret = 'whsec_vastuwheel_globalinch_2026';
+  const secret = 'whsec_test_mock_secret_key_12345678';
   const payload = JSON.stringify({
     entity: 'event',
     event: 'payment.captured',

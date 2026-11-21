@@ -47,7 +47,7 @@ export const LeadDetailDrawer: React.FC = () => {
   if (!lead) return null;
 
   const customer = db.customers.find(c => c.id === lead.customerId);
-  const orders = db.orders.filter(o => o.leadId === lead.id);
+  const orders = db.orders.filter(o => o.leadId === lead.id || (customer && o.customerId === customer.id));
   const orderIds = orders.map(o => o.id);
   const attempts = db.paymentAttempts.filter(pa => orderIds.includes(pa.orderId));
   const capturedPayments = db.capturedPayments.filter(cp => orderIds.includes(cp.orderId));

@@ -83,7 +83,7 @@ export function buildApp(): FastifyInstance {
   app.setErrorHandler(handleFastifyError);
 
   // 4. System Health Endpoints
-  app.get('/health', async () => {
+  const getHealthHandler = async () => {
     const dbHealth = await checkDatabaseHealth();
     return {
       status: dbHealth.ok ? 'HEALTHY' : 'DEGRADED',
@@ -91,7 +91,10 @@ export function buildApp(): FastifyInstance {
       database: dbHealth,
       timestamp: new Date().toISOString(),
     };
-  });
+  };
+
+  app.get('/health', getHealthHandler);
+  app.get('/api/v1/health', getHealthHandler);
 
   app.get('/api/v1/system/info', async () => {
     return {

@@ -940,7 +940,7 @@ export function generateFullEnterpriseMockData(): {
       productName: 'Vastu Wheel Residential & Commercial Audit',
       rzpAccount: 'RZP_GLOBALINCH' as RazorpayAccountCode,
       rzpCode: 'GLOBAL_INCH',
-      count: 520
+      count: 0 // Clean empty state: zero synthetic mock leads/orders. Populated only by real Meta Ads + Razorpay data.
     },
     {
       company: 'GLOBALINCH' as CompanyCode,
@@ -1480,23 +1480,23 @@ export function generateFullEnterpriseMockData(): {
 
   return {
     users: DEMO_USERS,
-    customers,
+    customers: [],
     landingPages: LANDING_PAGES,
-    campaigns: metaDailyInsights,
-    metaDailyInsights,
+    campaigns: [],
+    metaDailyInsights: [],
     adSets: [],
     ads: [],
-    touchpoints,
-    leads,
-    orders,
-    paymentAttempts,
-    capturedPayments,
-    refunds,
-    aiCalls,
-    watiMessages,
-    whatsappAiConversations,
-    attributions,
-    auditLogs,
-    videoCreatives: VIDEO_CREATIVES
+    touchpoints: [],
+    leads: [],
+    orders: [],
+    paymentAttempts: [],
+    capturedPayments: [],
+    refunds: [],
+    aiCalls: [],
+    watiMessages: [],
+    whatsappAiConversations: [],
+    attributions: [],
+    auditLogs: [],
+    videoCreatives: []
   };
 }

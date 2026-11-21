@@ -111,6 +111,65 @@ export const ShopifyDynamicFilterEngine: React.FC<ShopifyDynamicFilterEngineProp
     }
   ];
 
+  // Load saved visibleColumns from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('leadpulse_visible_columns');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setDynamicFilter(prev => ({ ...prev, visibleColumns: { ...prev.visibleColumns, ...parsed } }));
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  // Dynamic Creative Options from real database records
+  const dynamicCreativeOptions = React.useMemo(() => {
+    if (db.videoCreatives && db.videoCreatives.length > 0) {
+      return db.videoCreatives.map(c => ({
+        value: c.creativeName || (c as any).title || c.id,
+        label: c.creativeName || (c as any).title || c.id,
+      }));
+    }
+    const distinctLeadCreatives = Array.from(new Set(db.leads.map(l => l.adCreativeName).filter(Boolean)));
+    if (distinctLeadCreatives.length > 0) {
+      return distinctLeadCreatives.map(name => ({ value: name as string, label: name as string }));
+    }
+    return [
+      { value: 'VW_46 Dekhiye ab vastu', label: 'VW_46 Dekhiye ab vastu - 29-Oct-2026' },
+      { value: 'VW_28 Ny_Ghar_khari', label: 'VW_28 Ny_Ghar_khari_21-Oct-2026' },
+      { value: 'VW_47 16 Sal ke Vastu mein', label: 'VW_47 16 Sal ke Vastu mein_31-Oct-2026' }
+    ];
+  }, [db.videoCreatives, db.leads]);
+
+  // Dynamic Category Options cascading based on active company
+  const dynamicCategoryOptions = React.useMemo(() => {
+    const activeComp = dynamicFilter.company !== 'ALL' ? dynamicFilter.company : selectedCompany;
+    if (activeComp === 'GLOBALINCH') {
+      return [
+        { value: 'VASTU_REPORT', label: 'Vastu Wheel Automated Report' },
+        { value: 'PALMISTRY', label: 'Palmistry & Astrological Analysis' }
+      ];
+    }
+    if (activeComp === 'MANGO_TREE') {
+      return [
+        { value: 'WEBINAR', label: 'Vastu Mastery Live Webinar' }
+      ];
+    }
+    if (activeComp === 'VASTU_SHIKHAR') {
+      return [
+        { value: 'CONSULTANCY', label: 'Vastu Professional Consultancy' }
+      ];
+    }
+    return [
+      { value: 'VASTU_REPORT', label: 'Vastu Wheel Automated Report' },
+      { value: 'PALMISTRY', label: 'Palmistry & Astrological Analysis' },
+      { value: 'WEBINAR', label: 'Vastu Mastery Live Webinar' },
+      { value: 'CONSULTANCY', label: 'Vastu Professional Consultancy' }
+    ];
+  }, [dynamicFilter.company, selectedCompany]);
+
   // Available Filter Parameters definition (Matching Image 3 & 4)
   const filterParameters = [
     {
@@ -140,47 +199,34 @@ export const ShopifyDynamicFilterEngine: React.FC<ShopifyDynamicFilterEngineProp
       label: 'Landing page funnel',
       icon: Globe,
       options: [
+        { value: 'vastuwheel-report', label: 'vastuwheel-report (Live)' },
         { value: 'astro-kundali-horoscope', label: 'astro-kundali-horoscope' },
         { value: 'vastu-audit-floorplan', label: 'vastu-audit-floorplan' },
         { value: 'palmistry-ai-scan', label: 'palmistry-ai-scan' },
-        { value: 'consultancy-vip', label: 'consultancy-vip' },
-        { value: 'astroshi-store', label: 'astroshi-store' }
+        { value: 'consultancy-vip', label: 'consultancy-vip' }
       ]
     },
     {
       key: 'videoCreativeId',
       label: 'Meta video ad creative',
       icon: Film,
-      options: [
-        { value: 'Video Creative 01 - Problem Agitation', label: 'Video 01 - Problem Agitation & House Energy' },
-        { value: 'Video Creative 02 - Kundali Dosha Testimonial', label: 'Video 02 - Kundali Dosha Testimonial' },
-        { value: 'Video Creative 03 - Palmistry AI Scanning Feature', label: 'Video 03 - Palmistry AI Scanning Feature' },
-        { value: 'Video Creative 04 - Commercial Architecture Blueprint', label: 'Video 04 - Commercial Blueprint' },
-        { value: 'Video Creative 05 - Astroshi Spiritual Sacred Geometry', label: 'Video 05 - Astroshi Sacred Geometry' }
-      ]
+      options: dynamicCreativeOptions
     },
     {
       key: 'company',
       label: 'Operating company',
       icon: Building2,
       options: [
-        { value: 'VASTU_SHIKHAR', label: 'Vastu Shikhar' },
-        { value: 'GLOBALINCH', label: 'GlobalInch' },
-        { value: 'MANGO_TREE', label: 'Mango Tree Technology' }
+        { value: 'GLOBALINCH', label: 'GlobalInch (Connected)' },
+        { value: 'MANGO_TREE', label: 'Mango Tree Technology' },
+        { value: 'VASTU_SHIKHAR', label: 'Vastu Shikhar' }
       ]
     },
     {
       key: 'category',
       label: 'Operational category',
       icon: Layers,
-      options: [
-        { value: 'ASTROLOGY', label: 'Astrology Webinar' },
-        { value: 'VASTU', label: 'Vastu Architecture' },
-        { value: 'PALMISTRY', label: 'Palmistry Reports' },
-        { value: 'VASTU_REPORT', label: 'Vastu Wheel Report' },
-        { value: 'ASTROSHI', label: 'Astroshi Spiritual Guidance' },
-        { value: 'CONSULTANCY', label: 'Private Consultancy' }
-      ]
+      options: dynamicCategoryOptions
     },
     {
       key: 'telephonyStatus',
@@ -322,13 +368,21 @@ export const ShopifyDynamicFilterEngine: React.FC<ShopifyDynamicFilterEngineProp
 
   // Toggle Column Visibility
   const handleToggleColumn = (col: keyof typeof dynamicFilter.visibleColumns) => {
-    setDynamicFilter(prev => ({
-      ...prev,
-      visibleColumns: {
+    setDynamicFilter(prev => {
+      const updated = {
         ...prev.visibleColumns,
         [col]: !prev.visibleColumns[col]
+      };
+      try {
+        localStorage.setItem('leadpulse_visible_columns', JSON.stringify(updated));
+      } catch {
+        // ignore
       }
-    }));
+      return {
+        ...prev,
+        visibleColumns: updated
+      };
+    });
   };
 
   // Filter matched leads for export calculation
@@ -355,13 +409,13 @@ export const ShopifyDynamicFilterEngine: React.FC<ShopifyDynamicFilterEngineProp
       }
 
       // Date Range Filter
-      if (dateRange === 'TODAY' && lead.createdAt && !lead.createdAt.startsWith('2026-11-03')) return false;
-      if (dateRange === 'YESTERDAY' && lead.createdAt && !lead.createdAt.startsWith('2026-11-02')) return false;
-      if (dateRange === 'LAST_7_DAYS' && lead.createdAt && lead.createdAt < '2026-10-27') return false;
-      if (dateRange === 'LAST_30_DAYS' && lead.createdAt && lead.createdAt < '2026-10-04') return false;
-      if (dateRange === 'LAST_90_DAYS' && lead.createdAt && lead.createdAt < '2026-08-05') return false;
+      if (dateRange === 'TODAY' && lead.createdAt && !lead.createdAt.startsWith('2026-11-20')) return false;
+      if (dateRange === 'YESTERDAY' && lead.createdAt && !lead.createdAt.startsWith('2026-11-19')) return false;
+      if (dateRange === 'LAST_7_DAYS' && lead.createdAt && lead.createdAt < '2026-11-14') return false;
+      if (dateRange === 'LAST_30_DAYS' && lead.createdAt && lead.createdAt < '2026-10-22') return false;
       if (dateRange === 'THIS_MONTH' && lead.createdAt && lead.createdAt < '2026-11-01') return false;
       if (dateRange === 'LAST_MONTH' && lead.createdAt && (lead.createdAt < '2026-10-01' || lead.createdAt > '2026-10-31')) return false;
+      if (dateRange === 'ALL_TIME' && lead.createdAt && (lead.createdAt < '2026-10-01' || lead.createdAt > '2026-11-20T23:59:59')) return false;
       if (dateRange === 'CUSTOM' && customDateRange && lead.createdAt) {
         const leadDate = lead.createdAt.slice(0, 10);
         if (leadDate < customDateRange.startDate || leadDate > customDateRange.endDate) return false;

@@ -2,8 +2,8 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { razorpayService } from './razorpay.service';
 import { requireAuth, requirePermission } from '../../middleware/auth.middleware';
 import { db } from '../../database/client';
-import { rawWebhookEvents } from '../../database/schema/index';
-import { desc } from 'drizzle-orm';
+import { rawWebhookEvents, refunds, capturedPayments } from '../../database/schema/index';
+import { desc, eq } from 'drizzle-orm';
 
 export async function razorpayRoutes(app: FastifyInstance) {
   /**
@@ -51,7 +51,13 @@ export async function razorpayRoutes(app: FastifyInstance) {
    * Universal Webhook Ingress (fallback with slug query or header)
    */
   app.post('/api/v1/webhooks/razorpay', async (request, reply) => {
-    const slug = (request.query as any)?.account || (request.headers['x-account-slug'] as string) || 'vastuwheel-report';
+    const slug = (request.query as any)?.account || (request.headers['x-account-slug'] as string);
+    if (!slug) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'Missing required account identifier. Provide ?account=<slug> or X-Account-Slug header, or use the dedicated endpoint /api/v1/webhooks/razorpay/<slug>',
+      });
+    }
     return handleRazorpayWebhook(slug, request, reply);
   });
 
@@ -64,7 +70,13 @@ export async function razorpayRoutes(app: FastifyInstance) {
     const page = parseInt(query.page || '1', 10);
     const limit = parseInt(query.limit || '25', 10);
 
-    const result = await razorpayService.listPayments({ page, limit, status: query.status });
+    const result = await razorpayService.listPayments({
+      page,
+      limit,
+      status: query.status,
+      startDate: query.startDate,
+      endDate: query.endDate,
+    });
     return reply.status(200).send(result);
   });
 
@@ -90,4 +102,64 @@ export async function razorpayRoutes(app: FastifyInstance) {
 
     return reply.status(200).send({ data: events });
   });
+
+  /**
+   * Protected API: Gateway connection status
+   * GET /api/v1/payments/status
+   */
+  app.get('/api/v1/payments/status', { preHandler: [requireAuth, requirePermission('payments:view')] }, async (request, reply) => {
+    const status = await razorpayService.getConnectionStatus();
+    return reply.status(200).send(status);
+  });
+
+  /**
+   * Protected API: Trigger 30-day read-only historical payments backfill
+   * POST /api/v1/payments/import/historical-30d
+   */
+  app.post('/api/v1/payments/import/historical-30d', { preHandler: [requireAuth, requirePermission('payments:reconcile')] }, async (request, reply) => {
+    const query = request.query as any;
+    const slug = query.account || 'vastuwheel-report';
+    const result = await razorpayService.importHistoricalPayments30Days(slug);
+    return reply.status(200).send(result);
+  });
+
+  /**
+   * Protected API: Payments financial summary
+   * GET /api/v1/payments/summary
+   */
+  app.get('/api/v1/payments/summary', { preHandler: [requireAuth, requirePermission('payments:view')] }, async (request, reply) => {
+    const query = request.query as any;
+    const summary = await razorpayService.getPaymentsSummary(query.categoryId, query.startDate, query.endDate);
+    return reply.status(200).send(summary);
+  });
+
+  /**
+   * Protected API: List Refunds
+   * GET /api/v1/payments/refunds
+   */
+  app.get('/api/v1/payments/refunds', { preHandler: [requireAuth, requirePermission('payments:view')] }, async (request, reply) => {
+    const list = await db
+      .select({
+        id: refunds.id,
+        refundId: refunds.razorpayRefundId,
+        paymentId: capturedPayments.razorpayPaymentId,
+        amountPaise: refunds.amountPaise,
+        status: refunds.status,
+        reason: refunds.reason,
+        speed: refunds.speed,
+        createdAt: refunds.createdAt,
+      })
+      .from(refunds)
+      .innerJoin(capturedPayments, eq(refunds.capturedPaymentId, capturedPayments.id))
+      .orderBy(desc(refunds.createdAt));
+
+    return reply.status(200).send({
+      data: list.map((r) => ({
+        ...r,
+        amount: r.amountPaise / 100,
+      })),
+    });
+  });
 }
+
+

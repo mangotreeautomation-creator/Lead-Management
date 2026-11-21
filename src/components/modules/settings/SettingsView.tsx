@@ -470,10 +470,10 @@ export const SettingsView: React.FC = () => {
             <div className="rounded-xl border border-zinc-800 bg-[#0c0e14] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <span className="text-xs font-bold text-white block">Razorpay Live Key ID</span>
-                <span className="font-mono text-xs text-zinc-400">rzp_live_9901182A7BC390</span>
+                <span className="font-mono text-xs text-zinc-400">rzp_live_••••••••••••••••</span>
               </div>
               <button
-                onClick={() => handleCopy('rzp_key', 'rzp_live_9901182A7BC390')}
+                onClick={() => handleCopy('rzp_key', 'rzp_live_configured_in_env')}
                 className="flex items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200 hover:bg-zinc-700"
               >
                 {copiedId === 'rzp_key' ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}

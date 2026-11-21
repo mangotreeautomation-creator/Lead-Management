@@ -1,5 +1,6 @@
 import { buildApp } from './app';
 import { env } from './config/env';
+import { backgroundScheduler } from './jobs/scheduler';
 
 async function bootstrap() {
   const app = buildApp();
@@ -9,6 +10,10 @@ async function bootstrap() {
       port: env.PORT,
       host: env.HOST,
     });
+
+    // Start background job scheduler
+    backgroundScheduler.start();
+
     console.log(`\n============================================================`);
     console.log(`🚀 LEADPULSE ENTERPRISE BACKEND SERVER RUNNING`);
     console.log(`   Address: ${address}`);

@@ -72,32 +72,27 @@ export const EnterpriseDateRangePicker: React.FC<EnterpriseDateRangePickerProps>
     {
       id: 'TODAY',
       label: 'Today',
-      getRange: () => ({ start: new Date(2026, 10, 3), end: new Date(2026, 10, 3) })
+      getRange: () => ({ start: new Date(2026, 10, 20), end: new Date(2026, 10, 20) })
     },
     {
       id: 'YESTERDAY',
       label: 'Yesterday',
-      getRange: () => ({ start: new Date(2026, 10, 2), end: new Date(2026, 10, 2) })
+      getRange: () => ({ start: new Date(2026, 10, 19), end: new Date(2026, 10, 19) })
     },
     {
       id: 'LAST_7_DAYS',
       label: 'Last 7 Days',
-      getRange: () => ({ start: new Date(2026, 9, 27), end: new Date(2026, 10, 3) })
+      getRange: () => ({ start: new Date(2026, 10, 14), end: new Date(2026, 10, 20) })
     },
     {
       id: 'LAST_30_DAYS',
       label: 'Last 30 Days',
-      getRange: () => ({ start: new Date(2026, 9, 4), end: new Date(2026, 10, 3) })
-    },
-    {
-      id: 'LAST_90_DAYS',
-      label: 'Last 90 Days',
-      getRange: () => ({ start: new Date(2026, 7, 5), end: new Date(2026, 10, 3) })
+      getRange: () => ({ start: new Date(2026, 9, 22), end: new Date(2026, 10, 20) })
     },
     {
       id: 'THIS_MONTH',
       label: 'This Month (Nov 2026)',
-      getRange: () => ({ start: new Date(2026, 10, 1), end: new Date(2026, 10, 30) })
+      getRange: () => ({ start: new Date(2026, 10, 1), end: new Date(2026, 10, 20) })
     },
     {
       id: 'LAST_MONTH',
@@ -105,19 +100,9 @@ export const EnterpriseDateRangePicker: React.FC<EnterpriseDateRangePickerProps>
       getRange: () => ({ start: new Date(2026, 9, 1), end: new Date(2026, 9, 31) })
     },
     {
-      id: 'YEAR_TO_DATE',
-      label: 'Jan 2026 - till date',
-      getRange: () => ({ start: new Date(2026, 0, 1), end: new Date(2026, 10, 3) })
-    },
-    {
-      id: 'FINANCIAL_YEAR',
-      label: 'This financial year (FY26)',
-      getRange: () => ({ start: new Date(2026, 3, 1), end: new Date(2027, 2, 31) })
-    },
-    {
       id: 'ALL_TIME',
-      label: 'All Time',
-      getRange: () => ({ start: new Date(2025, 0, 1), end: new Date(2026, 10, 3) })
+      label: 'All Time (Oct 1 - Nov 20)',
+      getRange: () => ({ start: new Date(2026, 9, 1), end: new Date(2026, 10, 20) })
     }
   ];
 
@@ -203,7 +188,7 @@ export const EnterpriseDateRangePicker: React.FC<EnterpriseDateRangePickerProps>
 
   const isToday = (d: Date | null) => {
     if (!d) return false;
-    return d.getFullYear() === 2026 && d.getMonth() === 10 && d.getDate() === 3;
+    return d.getFullYear() === 2026 && d.getMonth() === 10 && d.getDate() === 20;
   };
 
   // Handle day click
@@ -259,8 +244,8 @@ export const EnterpriseDateRangePicker: React.FC<EnterpriseDateRangePickerProps>
     }
     const found = presets.find(p => p.id === dateRange);
     if (found) {
-      if (dateRange === 'TODAY') return 'Today (3 Nov)';
-      if (dateRange === 'ALL_TIME') return 'All Time';
+      if (dateRange === 'TODAY') return 'Today (20 Nov)';
+      if (dateRange === 'ALL_TIME') return 'Oct 1 - Nov 20, 2026';
       return found.label;
     }
     return 'Select Date Range';

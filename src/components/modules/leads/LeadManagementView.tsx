@@ -68,7 +68,7 @@ export const LeadManagementView: React.FC = () => {
         : dynamicFilter.videoCreativeId !== 'ALL'
         ? [dynamicFilter.videoCreativeId]
         : [];
-      if (activeCreatives.length > 0 && lead.adCreativeName && !activeCreatives.includes(lead.adCreativeName)) return false;
+      if (activeCreatives.length > 0 && !activeCreatives.includes(lead.adCreativeName as string) && !activeCreatives.includes(lead.adCreativeId as string)) return false;
 
       // Telephony filter (multi-select supported)
       const activeTelephony = dynamicFilter.telephonyStatuses && dynamicFilter.telephonyStatuses.length > 0
@@ -92,12 +92,12 @@ export const LeadManagementView: React.FC = () => {
         if (!activePaymentStatuses.includes(currentLeadPaymentStatus as any)) return false;
       }
 
-      // Date Range Filter
-      if (dateRange === 'TODAY' && lead.createdAt && !lead.createdAt.startsWith('2026-11-03')) return false;
-      if (dateRange === 'YESTERDAY' && lead.createdAt && !lead.createdAt.startsWith('2026-11-02')) return false;
-      if (dateRange === 'LAST_7_DAYS' && lead.createdAt && lead.createdAt < '2026-10-27') return false;
-      if (dateRange === 'LAST_30_DAYS' && lead.createdAt && lead.createdAt < '2026-10-04') return false;
-      if (dateRange === 'LAST_90_DAYS' && lead.createdAt && lead.createdAt < '2026-08-05') return false;
+      // Date Range Filter (Calibrated to current live date: 2026-11-20)
+      if (dateRange === 'TODAY' && lead.createdAt && !lead.createdAt.startsWith('2026-11-20')) return false;
+      if (dateRange === 'YESTERDAY' && lead.createdAt && !lead.createdAt.startsWith('2026-11-19')) return false;
+      if (dateRange === 'LAST_7_DAYS' && lead.createdAt && lead.createdAt < '2026-11-13') return false;
+      if (dateRange === 'LAST_30_DAYS' && lead.createdAt && lead.createdAt < '2026-10-21') return false;
+      if (dateRange === 'LAST_90_DAYS' && lead.createdAt && lead.createdAt < '2026-08-20') return false;
       if (dateRange === 'THIS_MONTH' && lead.createdAt && lead.createdAt < '2026-11-01') return false;
       if (dateRange === 'LAST_MONTH' && lead.createdAt && (lead.createdAt < '2026-10-01' || lead.createdAt > '2026-10-31')) return false;
       if (dateRange === 'CUSTOM' && customDateRange && lead.createdAt) {

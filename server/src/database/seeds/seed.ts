@@ -534,7 +534,6 @@ export async function runSeeder() {
     { cat: cPalm, comp: compGlobalInch, prefix: 'PALM', price: 99900, gw: gWheel },
     { cat: cWeb, comp: compMangoTree, prefix: 'WEB', price: 49900, gw: gWeb },
     { cat: cCons, comp: compVastuShikhar, prefix: 'CONS', price: 500000, gw: gCons },
-    { cat: cWheel, comp: compGlobalInch, prefix: 'VWHL', price: 149900, gw: gWheel },
   ];
 
   const statuses = ['NEW', 'CONTACTED', 'QUALIFIED', 'CONVERTED'];

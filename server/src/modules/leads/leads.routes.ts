@@ -25,7 +25,12 @@ export async function leadsRoutes(app: FastifyInstance) {
       limit,
       status,
       categoryCode,
+      companyCode: query.companyCode || query.company,
+      companyId: query.companyId,
       search,
+      startDate: query.startDate,
+      endDate: query.endDate,
+      creative: query.creative,
     });
 
     return reply.status(200).send(result);

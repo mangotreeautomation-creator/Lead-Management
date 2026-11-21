@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, timestamp, boolean, integer, bigint, numeric, jsonb, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, timestamp, boolean, integer, bigint, numeric, jsonb, index, uniqueIndex } from 'drizzle-orm/pg-core';
 import { companies } from './organizations';
 
 export const metaBusinessAccounts = pgTable('meta_business_accounts', {
@@ -99,25 +99,83 @@ export const metaInsightsDaily = pgTable('meta_insights_daily', {
   campaignId: uuid('campaign_id').references(() => metaCampaigns.id, { onDelete: 'cascade' }),
   adsetId: uuid('adset_id').references(() => metaAdSets.id, { onDelete: 'cascade' }),
   adId: uuid('ad_id').references(() => metaAds.id, { onDelete: 'cascade' }),
+  metaCampaignId: varchar('meta_campaign_id', { length: 100 }),
+  campaignName: varchar('campaign_name', { length: 255 }),
   date: varchar('date', { length: 10 }).notNull(), // YYYY-MM-DD
   spendPaise: bigint('spend_paise', { mode: 'number' }).notNull().default(0),
+  reach: integer('reach').default(0),
   impressions: integer('impressions').notNull().default(0),
+  frequency: numeric('frequency', { precision: 8, scale: 4 }).default('0'),
+  cpmPaise: integer('cpm_paise').default(0),
   clicks: integer('clicks').notNull().default(0),
+  outboundClicks: integer('outbound_clicks').default(0),
   inlineLinkClicks: integer('inline_link_clicks').notNull().default(0),
   ctr: numeric('ctr', { precision: 8, scale: 4 }).default('0'),
   cpcPaise: integer('cpc_paise').default(0),
-  cpmPaise: integer('cpm_paise').default(0),
+  landingPageViews: integer('landing_page_views').default(0),
+  addToCart: integer('add_to_cart').default(0),
+  initiateCheckout: integer('initiate_checkout').default(0),
   leadsCount: integer('leads_count').notNull().default(0),
   costPerLeadPaise: integer('cost_per_lead_paise').default(0),
+  addPaymentInfo: integer('add_payment_info').default(0),
   purchasesCount: integer('purchases_count').notNull().default(0),
   purchaseValuePaise: bigint('purchase_value_paise', { mode: 'number' }).default(0),
   roas: numeric('roas', { precision: 8, scale: 4 }).default('0'),
+  apvPaise: integer('apv_paise').default(0),
+  obcToLpvPct: numeric('obc_to_lpv_pct', { precision: 8, scale: 4 }).default('0'),
+  lpvToAtcPct: numeric('lpv_to_atc_pct', { precision: 8, scale: 4 }).default('0'),
+  atcToCiPct: numeric('atc_to_ci_pct', { precision: 8, scale: 4 }).default('0'),
+  lpvToCiPct: numeric('lpv_to_ci_pct', { precision: 8, scale: 4 }).default('0'),
+  ciToPurPct: numeric('ci_to_pur_pct', { precision: 8, scale: 4 }).default('0'),
+  lpvToPurPct: numeric('lpv_to_pur_pct', { precision: 8, scale: 4 }).default('0'),
+  rawInsights: jsonb('raw_insights'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => {
   return {
     insightDateIdx: index('insights_date_idx').on(table.date),
     adAccountDateIdx: index('insights_ad_acc_date_idx').on(table.adAccountId, table.date),
     adDateIdx: index('insights_ad_date_idx').on(table.adId, table.date),
+    accCampDateUnq: uniqueIndex('insights_daily_acc_camp_date_idx').on(table.adAccountId, table.metaCampaignId, table.date),
+  };
+});
+
+export const metaInsightsRealtime = pgTable('meta_insights_realtime', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  adAccountId: uuid('ad_account_id').notNull().references(() => metaAdAccounts.id, { onDelete: 'cascade' }),
+  campaignId: uuid('campaign_id').references(() => metaCampaigns.id, { onDelete: 'cascade' }),
+  metaCampaignId: varchar('meta_campaign_id', { length: 100 }).notNull(),
+  campaignName: varchar('campaign_name', { length: 255 }).notNull(),
+  reportingDate: varchar('reporting_date', { length: 10 }).notNull(), // YYYY-MM-DD
+  spendPaise: bigint('spend_paise', { mode: 'number' }).notNull().default(0),
+  reach: integer('reach').default(0),
+  impressions: integer('impressions').notNull().default(0),
+  frequency: numeric('frequency', { precision: 8, scale: 4 }).default('0'),
+  cpmPaise: integer('cpm_paise').default(0),
+  clicks: integer('clicks').notNull().default(0),
+  outboundClicks: integer('outbound_clicks').default(0),
+  ctr: numeric('ctr', { precision: 8, scale: 4 }).default('0'),
+  landingPageViews: integer('landing_page_views').default(0),
+  addToCart: integer('add_to_cart').default(0),
+  initiateCheckout: integer('initiate_checkout').default(0),
+  leadsCount: integer('leads_count').notNull().default(0),
+  addPaymentInfo: integer('add_payment_info').default(0),
+  purchasesCount: integer('purchases_count').notNull().default(0),
+  purchaseValuePaise: bigint('purchase_value_paise', { mode: 'number' }).default(0),
+  roas: numeric('roas', { precision: 8, scale: 4 }).default('0'),
+  apvPaise: integer('apv_paise').default(0),
+  obcToLpvPct: numeric('obc_to_lpv_pct', { precision: 8, scale: 4 }).default('0'),
+  lpvToAtcPct: numeric('lpv_to_atc_pct', { precision: 8, scale: 4 }).default('0'),
+  atcToCiPct: numeric('atc_to_ci_pct', { precision: 8, scale: 4 }).default('0'),
+  lpvToCiPct: numeric('lpv_to_ci_pct', { precision: 8, scale: 4 }).default('0'),
+  ciToPurPct: numeric('ci_to_pur_pct', { precision: 8, scale: 4 }).default('0'),
+  lpvToPurPct: numeric('lpv_to_pur_pct', { precision: 8, scale: 4 }).default('0'),
+  rawInsights: jsonb('raw_insights'),
+  lastSyncedAt: timestamp('last_synced_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => {
+  return {
+    realtimeAccCampDateUnq: uniqueIndex('insights_realtime_acc_camp_date_idx').on(table.adAccountId, table.metaCampaignId, table.reportingDate),
+    realtimeDateIdx: index('insights_realtime_date_idx').on(table.reportingDate),
   };
 });
 

@@ -33,25 +33,6 @@ PORT=3000
 HOST=127.0.0.1
 LOG_LEVEL=info
 
-
-"pagination":{
-  "page": 1,
-  "pageSize":20,
-  "totalpages" 1, 
-  "hasPreviousepage": false,
-  "hasPreviospage"false
-  {
-    "field":"dateFrom"
-    "issue": "Date"
-    "Target" 200
-    "metaAccute": z.string().min(5).max(64.)
-    "id" : (64)
-    "requestid":
-  }
-}
-
-
-
 # ==============================================================================
 # DATABASE CONFIGURATION (PostgreSQL)
 # ==============================================================================

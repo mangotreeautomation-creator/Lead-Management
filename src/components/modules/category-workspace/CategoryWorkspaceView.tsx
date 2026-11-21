@@ -168,7 +168,7 @@ export const CategoryWorkspaceView: React.FC = () => {
       if (selectedLpSlug !== 'ALL' && lead.landingPageSlug !== selectedLpSlug) return false;
 
       // 3. Video ad creative filter (if selected)
-      if (selectedVideoId !== 'ALL' && lead.adCreativeId !== selectedVideoId) return false;
+      if (selectedVideoId !== 'ALL' && lead.adCreativeId !== selectedVideoId && lead.adCreativeName !== selectedVideoId) return false;
 
       // 4. Search query
       if (effectiveSearch) {
@@ -607,7 +607,7 @@ export const CategoryWorkspaceView: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {availableVideos.map(vid => {
-                const vidLeads = db.leads.filter(l => l.adCreativeId === vid.id);
+                const vidLeads = db.leads.filter(l => l.adCreativeId === vid.id || l.adCreativeName === vid.name || l.adCreativeName === vid.title);
                 const isSelected = selectedVideoId === vid.id;
 
                 return (
