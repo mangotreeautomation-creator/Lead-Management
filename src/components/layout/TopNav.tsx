@@ -93,16 +93,8 @@ export const TopNav: React.FC = () => {
         </div>
       </div>
 
-      {/* RIGHT: LIVE DB, DATE PICKER, ALERTS, USER PROFILE */}
-      <div className="flex items-center gap-2.5 sm:gap-3">
-        {/* Live Backend Indicator */}
-        {isBackendConnected && (
-          <span className="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-medium bg-emerald-50 text-emerald-600 border border-emerald-200/60" title="Connected to PostgreSQL & Fastify">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            LIVE DB
-          </span>
-        )}
-
+      {/* RIGHT: ALERTS, USER PROFILE (MATCHING SPEC) */}
+      <div className="flex items-center gap-3">
         {/* Operational Notifications Popover */}
         <div className="relative" ref={notifRef}>
           <button

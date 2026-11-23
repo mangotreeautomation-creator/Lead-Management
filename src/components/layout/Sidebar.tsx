@@ -32,6 +32,7 @@ import {
   ChevronUp,
   Gem,
   ArrowLeft,
+  RefreshCw,
   AlertOctagon,
   Webhook,
   Zap
@@ -207,31 +208,10 @@ export const Sidebar: React.FC = () => {
             className="flex w-full items-center justify-between rounded-xl border border-zinc-800 bg-[#161922] px-3 py-1.5 text-xs font-semibold text-zinc-300 hover:border-purple-500/50 hover:bg-zinc-800 hover:text-white transition-all shadow-sm"
           >
             <span className="flex items-center gap-2">
-              <ArrowLeft className="h-3.5 w-3.5 text-blue-400" />
+              <RefreshCw className="h-3.5 w-3.5 text-slate-400" />
               <span>Change Company / Hub</span>
             </span>
             <span className="text-[10px] font-mono text-zinc-500 bg-zinc-800/80 px-1.5 py-0.5 rounded">ESC</span>
-          </button>
-        </div>
-      )}
-
-      {/* Active Preset Indicator (When Failed Payments or others active) */}
-      {!isSidebarCollapsed && dynamicFilter.preset === 'FAILED_PAYMENTS_QUEUE' && (
-        <div className="mx-3 mt-2 rounded-lg border border-rose-500/30 bg-rose-500/10 p-2 text-xs">
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-1.5 font-bold text-rose-300">
-              <AlertOctagon className="h-3.5 w-3.5 text-rose-400" />
-              <span>Failed Queue</span>
-            </span>
-            <span className="rounded bg-rose-500/30 px-1 text-[10px] font-bold text-rose-200">
-              {failedCount}
-            </span>
-          </div>
-          <button
-            onClick={() => updateFilterPreset('ALL')}
-            className="mt-1 text-[10px] text-zinc-400 hover:text-white underline"
-          >
-            Reset to All Data
           </button>
         </div>
       )}
@@ -240,17 +220,13 @@ export const Sidebar: React.FC = () => {
       <div className="flex-1 overflow-y-auto px-3 py-2 space-y-5">
         {/* SECTION 1: CORE OPERATIONS */}
         <div className="space-y-0.5 text-xs">
-          {/* 1. Overview */}
+          {/* 1. Dynamic Analytics */}
           <button
             onClick={() => handleNav('overview')}
-            className={`group flex w-full items-center justify-between rounded-lg px-2.5 py-2 font-medium transition-colors ${
-              isNavActive('overview')
-                ? 'bg-blue-600/15 text-blue-400 font-semibold border border-blue-500/20'
-                : 'text-slate-400 hover:bg-[#161920] hover:text-white'
-            }`}
+            className="group flex w-full items-center justify-between rounded-lg px-2.5 py-2 font-medium text-slate-400 hover:bg-[#161920] hover:text-white transition-colors"
           >
             <div className="flex items-center gap-2.5">
-              <LayoutDashboard className="h-4 w-4" />
+              <TrendingUp className="h-4 w-4" />
               {!isSidebarCollapsed && <span>Dynamic Analytics</span>}
             </div>
           </button>

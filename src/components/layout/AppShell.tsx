@@ -113,8 +113,8 @@ export const AppShell: React.FC = () => {
         onClose={() => setIsCategorySelectorOpen(false)}
       />
 
-      {/* Floating Sidekick AI Copilot (Shopify Style) */}
-      <SidekickFloatingBar />
+      {/* Floating Sidekick AI Copilot (Only outside of analytics dashboard to avoid visual obstruction) */}
+      {activeModule !== 'overview' && activeModule !== 'analytics' && <SidekickFloatingBar />}
     </div>
   );
 };
