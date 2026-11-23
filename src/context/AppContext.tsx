@@ -75,6 +75,7 @@ export function resolveActiveDateRange(
 
 export type NavigationModule = 
   | 'overview'
+  | 'analytics'
   | 'category-workspace'
   | 'leads'
   | 'customers'

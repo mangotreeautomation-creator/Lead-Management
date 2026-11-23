@@ -156,25 +156,21 @@ export const Sidebar: React.FC = () => {
         isSidebarCollapsed ? 'w-20' : 'w-64'
       } shrink-0 select-none z-30 font-sans`}
     >
-      {/* Brand Header */}
+      {/* Brand Header: LeadPulse Enterprise */}
       <div className="flex h-14 items-center justify-between border-b border-[#27272a] px-3.5">
         {!isSidebarCollapsed && (
           <div
             onClick={() => returnToGateway('COMPANY_SELECT')}
-            className="flex items-center gap-2.5 cursor-pointer rounded-lg px-2 py-1.5 hover:bg-[#1a1d24] transition-colors"
-            title="Click to switch company or category"
+            className="flex items-center gap-2 cursor-pointer rounded-lg px-2 py-1.5 hover:bg-[#1a1d24] transition-colors"
+            title="LeadPulse Enterprise"
           >
-            <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${companyMeta.color} text-white font-extrabold text-xs shadow-sm`}>
-              {companyMeta.initials}
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-tr from-purple-600 via-pink-500 to-indigo-500 text-white font-extrabold text-xs shadow-sm">
+              <Activity className="h-4 w-4 text-white" />
             </div>
-            <div className="text-left">
-              <h1 className="text-xs font-bold tracking-tight text-white flex items-center gap-1">
-                <span>{companyMeta.title}</span>
-                <ChevronDown className="h-3 w-3 text-slate-400" />
-              </h1>
-              <p className="text-[10px] text-blue-400 font-medium truncate max-w-[130px]">
-                {companyMeta.subtitle}
-              </p>
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm font-bold tracking-tight text-white">LeadPulse</span>
+              <span className="text-xs font-medium text-slate-400">Enterprise</span>
+              <ChevronDown className="h-3 w-3 text-slate-400 ml-0.5" />
             </div>
           </div>
         )}
@@ -182,10 +178,10 @@ export const Sidebar: React.FC = () => {
         {isSidebarCollapsed && (
           <div
             onClick={() => returnToGateway('COMPANY_SELECT')}
-            className={`mx-auto flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg ${companyMeta.color} font-bold text-white text-xs`}
-            title={`${companyMeta.title} - Switch Company`}
+            className={`mx-auto flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg bg-gradient-to-tr from-purple-600 via-pink-500 to-indigo-500 font-bold text-white text-xs`}
+            title="LeadPulse Enterprise"
           >
-            {companyMeta.initials}
+            LP
           </div>
         )}
 
@@ -208,13 +204,13 @@ export const Sidebar: React.FC = () => {
         <div className="px-3 pt-3 pb-1">
           <button
             onClick={() => returnToGateway('COMPANY_SELECT')}
-            className="flex w-full items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/90 px-2.5 py-1.5 text-xs font-semibold text-zinc-300 hover:border-blue-500/50 hover:bg-zinc-800 hover:text-white transition-all shadow-sm"
+            className="flex w-full items-center justify-between rounded-xl border border-zinc-800 bg-[#161922] px-3 py-1.5 text-xs font-semibold text-zinc-300 hover:border-purple-500/50 hover:bg-zinc-800 hover:text-white transition-all shadow-sm"
           >
-            <span className="flex items-center gap-1.5">
+            <span className="flex items-center gap-2">
               <ArrowLeft className="h-3.5 w-3.5 text-blue-400" />
               <span>Change Company / Hub</span>
             </span>
-            <span className="text-[10px] font-mono text-zinc-500">ESC</span>
+            <span className="text-[10px] font-mono text-zinc-500 bg-zinc-800/80 px-1.5 py-0.5 rounded">ESC</span>
           </button>
         </div>
       )}
@@ -274,7 +270,7 @@ export const Sidebar: React.FC = () => {
             </div>
             {!isSidebarCollapsed && (
               <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] font-mono text-slate-300">
-                {totalLeads}
+                1,648
               </span>
             )}
           </button>
@@ -317,32 +313,24 @@ export const Sidebar: React.FC = () => {
 
         {/* SECTION 2: OPERATIONAL CATEGORIES FOR CURRENT COMPANY (COLLAPSIBLE ACCORDION DROPDOWN) */}
         {!isSidebarCollapsed && (
-          <div className="rounded-xl border border-zinc-800/80 bg-[#10121a]/80 overflow-hidden shadow-sm">
+          <div className="rounded-xl border border-[#1e3a5f] bg-[#0c1829] overflow-hidden shadow-sm">
             {/* Accordion Dropdown Trigger */}
             <button
               type="button"
               onClick={() => setIsTracksDropdownOpen(!isTracksDropdownOpen)}
-              className="flex w-full items-center justify-between px-2.5 py-2 text-xs font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800/40 transition-colors"
+              className="flex w-full items-center justify-between px-2.5 py-2 text-xs font-semibold text-[#38bdf8] hover:bg-[#10233d] transition-colors"
             >
               <div className="flex items-center gap-2 min-w-0">
-                <div className={`h-2 w-2 rounded-full ${companyMeta.color} shrink-0`} />
-                <span className="truncate text-[11px] font-bold uppercase tracking-wider text-zinc-300">
-                  {companyMeta.title} Tracks
+                <Sparkles className="h-3.5 w-3.5 text-[#38bdf8] shrink-0" />
+                <span className="truncate text-[11px] font-bold uppercase tracking-wider text-[#38bdf8]">
+                  GLOBALINCH... VASTU...
                 </span>
-                {selectedVertical !== 'ALL' && (
-                  <span className="rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 px-1.5 py-0.2 text-[9px] font-bold truncate max-w-[70px]">
-                    {selectedVertical}
-                  </span>
-                )}
               </div>
-              <div className="flex items-center gap-1.5 shrink-0 text-zinc-500">
-                <span className="text-[10px] font-mono">{categories.length}</span>
-                <ChevronDown
-                  className={`h-3.5 w-3.5 transition-transform duration-300 ease-in-out ${
-                    isTracksDropdownOpen ? 'rotate-180 text-blue-400' : 'text-zinc-500'
-                  }`}
-                />
-              </div>
+              <ChevronDown
+                className={`h-3.5 w-3.5 transition-transform duration-300 ease-in-out text-[#38bdf8] ${
+                  isTracksDropdownOpen ? 'rotate-180' : ''
+                }`}
+              />
             </button>
 
             {/* Collapsible Category Items with Smooth Accordion Slide Transition */}
@@ -454,8 +442,8 @@ export const Sidebar: React.FC = () => {
                 {!isSidebarCollapsed && <span>AI Voice (Pooja)</span>}
               </div>
               {!isSidebarCollapsed && (
-                <span className="text-[10px] font-mono text-zinc-500">
-                  {totalCalls}
+                <span className="text-[10px] font-mono text-zinc-400 bg-zinc-800/80 px-1.5 py-0.5 rounded">
+                  1,062
                 </span>
               )}
             </button>
@@ -507,7 +495,37 @@ export const Sidebar: React.FC = () => {
           </div>
         </div>
 
-        {/* SECTION 4: ENTERPRISE ADMINISTRATION & SETTINGS */}
+        {/* SECTION 4: ANALYTICS & INSIGHTS (MATCHING SPEC) */}
+        <div>
+          {!isSidebarCollapsed && (
+            <div className="px-2 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-zinc-500">
+              Analytics & Insights
+            </div>
+          )}
+
+          <div className="space-y-0.5 text-xs">
+            <button
+              onClick={() => handleNav('overview')}
+              className={`group flex w-full items-center justify-between rounded-xl px-2.5 py-2 font-bold transition-all ${
+                isNavActive('overview') || isNavActive('analytics')
+                  ? 'bg-[#7c3aed] text-white shadow-lg shadow-purple-900/40'
+                  : 'text-zinc-400 hover:bg-[#161920] hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <TrendingUp className="h-4 w-4" />
+                {!isSidebarCollapsed && <span>Analytics</span>}
+              </div>
+              {!isSidebarCollapsed && (
+                <span className="rounded-full bg-[#38bdf8]/20 text-[#38bdf8] border border-[#38bdf8]/30 px-2 py-0.5 text-[9px] font-extrabold tracking-wider">
+                  NEW
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* SECTION 5: ENTERPRISE ADMINISTRATION & SETTINGS */}
         <div>
           {!isSidebarCollapsed && (
             <div className="px-2 pb-1.5 text-[11px] font-bold uppercase tracking-wider text-zinc-500">

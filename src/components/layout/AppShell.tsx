@@ -41,6 +41,7 @@ export const AppShell: React.FC = () => {
   const renderActiveView = () => {
     switch (activeModule) {
       case 'overview':
+      case 'analytics':
         return <OverviewDashboard />;
       case 'category-workspace':
         return <CategoryWorkspaceView />;
@@ -86,7 +87,7 @@ export const AppShell: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-[#f6f6f7] text-[#1a1a1a] antialiased dark:bg-[#0f0f11] dark:text-[#f4f4f5]">
+    <div className="flex h-screen w-full overflow-hidden bg-[#f7f8fd] text-[#1a1a1a] antialiased">
       {/* Navigation Sidebar */}
       <Sidebar />
 
@@ -96,7 +97,7 @@ export const AppShell: React.FC = () => {
         <TopNav />
 
         {/* Dynamic Scrollable Content Canvas with Smooth Page Slide Transition */}
-        <main className="flex-1 overflow-y-auto pb-16">
+        <main className="flex-1 overflow-y-auto pb-16 bg-[#f7f8fd]">
           <div key={activeModule} className="animate-page-slide">
             {renderActiveView()}
           </div>

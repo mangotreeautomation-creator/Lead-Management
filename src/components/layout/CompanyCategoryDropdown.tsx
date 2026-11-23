@@ -272,22 +272,22 @@ export const CompanyCategoryDropdown: React.FC = () => {
 
   return (
     <div className="relative inline-block text-left" ref={containerRef}>
-      {/* CASCADING TRIGGER BUTTON (Replaces both old buttons with single sleek control) */}
+      {/* CASCADING TRIGGER BUTTON MATCHING SPEC IMAGE */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-2 rounded-lg border border-zinc-800 bg-[#0c0e14] px-3 py-1.5 text-xs font-semibold text-zinc-200 hover:border-zinc-700 hover:bg-zinc-900 transition-all shadow-sm ${
-          isOpen ? 'ring-1 ring-blue-500 border-blue-500/50 bg-zinc-900' : ''
+        className={`flex items-center gap-2 rounded-xl border border-[#e0e7ff] bg-[#f5f3ff] px-3.5 py-1.5 text-xs font-semibold text-[#4f46e5] hover:bg-[#ede9fe] transition-all shadow-sm ${
+          isOpen ? 'ring-2 ring-purple-400 border-purple-400' : ''
         }`}
         title="Switch Company or Category dynamically"
       >
-        <Building2 className="h-3.5 w-3.5 text-blue-400 shrink-0" />
-        <span className="font-bold text-white">{companyName}</span>
-        <span className="text-zinc-600 font-normal">›</span>
-        <span className="text-blue-300 font-medium truncate max-w-[130px]">{catName}</span>
+        <Globe className="h-3.5 w-3.5 text-[#4f46e5] shrink-0" />
+        <span className="font-bold text-[#4f46e5]">{companyName}</span>
+        <span className="text-purple-300 font-normal">›</span>
+        <span className="text-[#4f46e5] font-semibold truncate max-w-[130px]">{catName}</span>
         <ChevronDown
-          className={`h-3 w-3 text-zinc-400 transition-transform duration-200 ml-0.5 ${
-            isOpen ? 'rotate-180 text-blue-400' : ''
+          className={`h-3 w-3 text-[#4f46e5] transition-transform duration-200 ml-0.5 ${
+            isOpen ? 'rotate-180' : ''
           }`}
         />
       </button>
